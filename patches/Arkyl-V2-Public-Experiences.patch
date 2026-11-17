@@ -1,0 +1,540 @@
+diff --git a/src/app/(site)/about/page.tsx b/src/app/(site)/about/page.tsx
+new file mode 100644
+index 0000000..9648bb8
+--- /dev/null
++++ b/src/app/(site)/about/page.tsx
+@@ -0,0 +1,19 @@
++import { ArrowUpRight, Compass, Handshake, Lightbulb, Target } from "lucide-react";
++import Link from "next/link";
++import { PageHero } from "@/components/site/page-hero";
++import { ContentCard } from "@/components/site/content-card";
++
++export const metadata = { title: "About Us | Arkyl Ventures", description: "Get to know Arkyl Ventures and our approach to technology and business solutions." };
++
++export default function AboutPage() {
++  return <>
++    <PageHero eyebrow="ABOUT ARKYL VENTURES" title="A practical partner for" accent="what comes next." description="Arkyl Ventures brings technology and business support together. We focus on understanding the challenge, explaining the options and helping people and businesses take practical next steps." primaryLabel="Explore our solutions" primaryHref="/technology-it" secondaryLabel="Contact us" secondaryHref="/contact" />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">OUR PURPOSE</span><h2>Make useful solutions <span>more accessible.</span></h2><p>We are building a business that can respond to changing needs across technology, digital services, retail and business support.</p></div><div className="principle-grid">
++      <ContentCard icon={Target} title="Understand first" description="We start by understanding what you need, what is getting in the way and what a useful outcome looks like." />
++      <ContentCard icon={Lightbulb} title="Keep it practical" description="We aim for clear recommendations and solutions that make sense for the situation and available resources." />
++      <ContentCard icon={Handshake} title="Work with care" description="Good communication and a considered approach matter from the first conversation through delivery." />
++      <ContentCard icon={Compass} title="Keep moving forward" description="Our goal is to help customers make informed decisions and take the next step with greater confidence." />
++    </div></section>
++    <section className="page-callout section-container"><div><span className="section-kicker">OUR TAGLINE</span><h2>Where Possibilities <span>Begin.</span></h2><p>Whether you are solving a technology problem, starting a business or looking for a useful product, we want to make the next step clearer.</p></div><Link className="button button-primary" href="/contact">Start a conversation <ArrowUpRight size={17} /></Link></section>
++  </>;
++}
+diff --git a/src/app/(site)/business-services/page.tsx b/src/app/(site)/business-services/page.tsx
+new file mode 100644
+index 0000000..1417182
+--- /dev/null
++++ b/src/app/(site)/business-services/page.tsx
+@@ -0,0 +1,18 @@
++import Link from "next/link";
++import { ArrowUpRight } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { ContentCard } from "@/components/site/content-card";
++import { businessServices } from "@/data/public-content";
++
++export const metadata = { title: "Business Services | Arkyl Ventures", description: "Explore business startup assistance, documentation, company profiles and business support." };
++
++export default function BusinessServicesPage() {
++  return <>
++    <PageHero eyebrow="BUSINESS SERVICES" title="Build a stronger" accent="business foundation." description="Starting and running a business involves many moving parts. Explore practical support with business setup, documentation, administration, consulting and digital workflows." primaryLabel="Discuss your business needs" primaryHref="/contact" secondaryLabel="Explore technology" secondaryHref="/technology-it" />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">WAYS WE CAN SUPPORT YOU</span><h2>Make the next business step <span>clearer.</span></h2><p>Choose an area to learn more. Service scope and availability are confirmed during your enquiry.</p></div>
++      <div className="content-card-grid">{businessServices.map((service, index) => <ContentCard key={service.slug} number={String(index + 1).padStart(2, "0")} icon={service.icon} title={service.title} description={service.description} href={`/services/${service.slug}`} />)}</div>
++      <p className="compliance-note">Business registration assistance is administrative support and does not replace official CIPC processes or guarantee registration or approval. Financing enquiries are not loan approvals; eligibility, affordability and any applicable regulatory requirements must be assessed by the relevant provider.</p>
++    </section>
++    <section className="page-callout section-container"><div><span className="section-kicker">LET&apos;S TALK BUSINESS</span><h2>Start with a <span>conversation.</span></h2><p>Tell us where you are in your business journey and what kind of support you are looking for.</p></div><Link className="button button-primary" href="/contact">Make an enquiry <ArrowUpRight size={17} /></Link></section>
++  </>;
++}
+diff --git a/src/app/(site)/contact/page.tsx b/src/app/(site)/contact/page.tsx
+new file mode 100644
+index 0000000..4fb86da
+--- /dev/null
++++ b/src/app/(site)/contact/page.tsx
+@@ -0,0 +1,18 @@
++import Link from "next/link";
++import { ArrowUpRight, BriefcaseBusiness, Monitor, ShoppingBag } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { ContentCard } from "@/components/site/content-card";
++
++export const metadata = { title: "Contact | Arkyl Ventures", description: "Get in touch with Arkyl Ventures about technology, business services and products." };
++
++export default function ContactPage() {
++  return <>
++    <PageHero eyebrow="CONTACT ARKYL VENTURES" title="Tell us what you" accent="have in mind." description="Whether you need technology support, business assistance or information about a product, start by choosing the area that best describes your enquiry." />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">WHAT CAN WE HELP WITH?</span><h2>Choose a starting <span>point.</span></h2><p>These links will take you to the relevant service or product information so you can identify what you need before making contact.</p></div><div className="principle-grid contact-options">
++      <ContentCard icon={Monitor} title="Technology & IT" description="Support, repairs, websites, software, networking and other technology requirements." href="/technology-it" linkLabel="Explore technology services" />
++      <ContentCard icon={BriefcaseBusiness} title="Business services" description="Business startup assistance, documentation, profiles, administration and consulting." href="/business-services" linkLabel="Explore business services" />
++      <ContentCard icon={ShoppingBag} title="Products & shopping" description="Explore the shop categories and product areas being introduced to the Arkyl catalogue." href="/shop" linkLabel="Explore the shop" />
++    </div></section>
++    <section className="page-callout section-container"><div><span className="section-kicker">WHERE POSSIBILITIES BEGIN</span><h2>We&apos;re ready to understand <span>your next step.</span></h2><p>Direct contact details and enquiry submission will be connected through the platform settings and request workflow in a later development phase.</p></div><Link className="button button-primary" href="/about">Learn about Arkyl <ArrowUpRight size={17} /></Link></section>
++  </>;
++}
+diff --git a/src/app/(site)/page.tsx b/src/app/(site)/page.tsx
+index f2098fd..5272bcd 100644
+--- a/src/app/(site)/page.tsx
++++ b/src/app/(site)/page.tsx
+@@ -31,8 +31,8 @@ export default function HomePage() {
+           <h1 id="hero-title">Move your ideas <span>forward.</span></h1>
+           <p className="hero-description">Technology and business solutions designed to help you work smarter, grow confidently and make more possible.</p>
+           <div className="hero-actions">
+-            <Link className="button button-primary" href="/#contact">Let&apos;s get started <ArrowUpRight size={17} /></Link>
+-            <Link className="button button-quiet" href="/#about">Discover Arkyl <ArrowRight size={16} /></Link>
++            <Link className="button button-primary" href="/contact">Let&apos;s get started <ArrowUpRight size={17} /></Link>
++            <Link className="button button-quiet" href="/about">Discover Arkyl <ArrowRight size={16} /></Link>
+           </div>
+           <div className="hero-proof"><span className="proof-dot" /> Practical solutions. Thoughtful service. Room to grow.</div>
+         </div>
+@@ -59,7 +59,7 @@ export default function HomePage() {
+ 
+       <section className="intro-strip section-container" aria-label="Company introduction">
+         <p>One partner for <strong>technology, business support</strong> and the tools that help you move forward.</p>
+-        <Link href="/#about" className="text-link">Get to know us <ArrowUpRight size={16} /></Link>
++        <Link href="/about" className="text-link">Get to know us <ArrowUpRight size={16} /></Link>
+       </section>
+ 
+       <section className="content-section section-container" id="technology" aria-labelledby="technology-title">
+@@ -70,22 +70,22 @@ export default function HomePage() {
+         <div className="service-grid">
+           {technologyServices.map((service) => {
+             const Icon = service.icon;
+-            return <article className="service-card" key={service.title}><span className="service-icon"><Icon size={21} /></span><h3>{service.title}</h3><p>{service.text}</p><Link href="/#technology" aria-label={`Explore ${service.title}`}><ArrowUpRight size={17} /></Link></article>;
++            return <article className="service-card" key={service.title}><span className="service-icon"><Icon size={21} /></span><h3>{service.title}</h3><p>{service.text}</p><Link href="/technology-it" aria-label={`Explore ${service.title}`}><ArrowUpRight size={17} /></Link></article>;
+           })}
+         </div>
+-        <div className="section-link-row"><span>Technology solutions for home and business</span><Link className="text-link" href="/#technology">Explore Technology & IT <ArrowUpRight size={16} /></Link></div>
++        <div className="section-link-row"><span>Technology solutions for home and business</span><Link className="text-link" href="/technology-it">Explore Technology & IT <ArrowUpRight size={16} /></Link></div>
+       </section>
+ 
+       <section className="business-section" id="business-services" aria-labelledby="business-title">
+         <div className="business-inner section-container">
+-          <div className="business-copy"><span className="section-kicker">02 / BUSINESS SERVICES</span><h2 id="business-title">Build a stronger <span>business foundation.</span></h2><p>Getting a business off the ground or keeping it moving takes time, structure and the right support. We help make those next steps clearer.</p><Link className="button button-outline" href="/#business-services">Explore business services <ArrowUpRight size={17} /></Link></div>
++          <div className="business-copy"><span className="section-kicker">02 / BUSINESS SERVICES</span><h2 id="business-title">Build a stronger <span>business foundation.</span></h2><p>Getting a business off the ground or keeping it moving takes time, structure and the right support. We help make those next steps clearer.</p><Link className="button button-outline" href="/business-services">Explore business services <ArrowUpRight size={17} /></Link></div>
+           <div className="business-list-card glass-card"><div className="business-list-heading"><BriefcaseBusiness size={19} /><span>Ways we can support you</span></div>{businessServices.map((service) => <div className="business-list-item" key={service}><CheckCircle2 size={17} /><span>{service}</span><ArrowUpRight size={15} /></div>)}<p className="business-disclaimer">Service availability and scope are confirmed during your enquiry. Official registrations and approvals remain subject to the relevant authorities.</p></div>
+         </div>
+       </section>
+ 
+       <section className="content-section section-container" id="shop" aria-labelledby="shop-title">
+         <div className="section-heading-row"><div><span className="section-kicker">03 / THE ARKYL SHOP</span><h2 id="shop-title">Useful products. <span>Considered choices.</span></h2></div><p>Explore technology and everyday products selected to support how you work and live. Our catalogue will grow as new categories become available.</p></div>
+-        <div className="shop-feature-card"><div className="shop-feature-icon"><ShoppingBag size={28} /></div><div><span className="shop-label">COMING INTO FOCUS</span><h3>A smarter way to shop for the things you need.</h3><p>Browse product categories, compare options and find the right fit as our online store expands.</p></div><Link className="button button-primary" href="/#shop">Explore the shop <ArrowUpRight size={17} /></Link></div>
++        <div className="shop-feature-card"><div className="shop-feature-icon"><ShoppingBag size={28} /></div><div><span className="shop-label">COMING INTO FOCUS</span><h3>A smarter way to shop for the things you need.</h3><p>Browse product categories, compare options and find the right fit as our online store expands.</p></div><Link className="button button-primary" href="/shop">Explore the shop <ArrowUpRight size={17} /></Link></div>
+       </section>
+ 
+       <section className="why-section section-container" aria-labelledby="why-title">
+@@ -95,7 +95,7 @@ export default function HomePage() {
+ 
+       <section className="about-preview section-container" id="about" aria-labelledby="about-title">
+         <div className="about-preview-mark"><span>AV</span><i>ARKYL VENTURES</i></div>
+-        <div className="about-preview-copy"><span className="section-kicker">ABOUT ARKYL VENTURES</span><h2 id="about-title">A practical partner for <span>what comes next.</span></h2><p>Arkyl Ventures brings technology and business support together under one roof. Our focus is to understand what you need, make the options clear and help you take the next step with confidence.</p><Link className="text-link" href="/#contact">Talk to our team <ArrowUpRight size={16} /></Link></div>
++        <div className="about-preview-copy"><span className="section-kicker">ABOUT ARKYL VENTURES</span><h2 id="about-title">A practical partner for <span>what comes next.</span></h2><p>Arkyl Ventures brings technology and business support together under one roof. Our focus is to understand what you need, make the options clear and help you take the next step with confidence.</p><Link className="text-link" href="/contact">Talk to our team <ArrowUpRight size={16} /></Link></div>
+       </section>
+ 
+       <section className="portfolio-preview section-container" id="portfolio" aria-labelledby="portfolio-title">
+@@ -103,7 +103,7 @@ export default function HomePage() {
+         <div className="portfolio-preview-note"><span className="portfolio-preview-number">01</span><div><strong>Project portfolio</strong><small>Selected work and case studies will be published here.</small></div><Sparkles size={20} /></div>
+       </section>
+ 
+-      <section className="contact-band section-container" id="contact"><div><span className="section-kicker">HAVE SOMETHING IN MIND?</span><h2>Let&apos;s make the next step <span>possible.</span></h2><p>Tell us what you are working on. We&apos;ll help you explore the right way forward.</p></div><Link className="button button-primary" href="/#contact">Start a conversation <ArrowUpRight size={17} /></Link></section>
++      <section className="contact-band section-container" id="contact"><div><span className="section-kicker">HAVE SOMETHING IN MIND?</span><h2>Let&apos;s make the next step <span>possible.</span></h2><p>Tell us what you are working on. We&apos;ll help you explore the right way forward.</p></div><Link className="button button-primary" href="/contact">Start a conversation <ArrowUpRight size={17} /></Link></section>
+     </>
+   );
+ }
+diff --git a/src/app/(site)/portfolio/page.tsx b/src/app/(site)/portfolio/page.tsx
+new file mode 100644
+index 0000000..9f05402
+--- /dev/null
++++ b/src/app/(site)/portfolio/page.tsx
+@@ -0,0 +1,15 @@
++import { ArrowUpRight, Layers3 } from "lucide-react";
++import Link from "next/link";
++import { PageHero } from "@/components/site/page-hero";
++
++export const metadata = { title: "Portfolio | Arkyl Ventures", description: "Selected projects and work from Arkyl Ventures." };
++
++export default function PortfolioPage() {
++  return <>
++    <PageHero eyebrow="OUR PORTFOLIO" title="Ideas shaped into" accent="useful work." description="This is where Arkyl Ventures will present selected websites, software, digital experiences and business solutions as projects are completed and approved for publication." primaryLabel="Discuss a project" primaryHref="/contact" secondaryLabel="Explore technology" secondaryHref="/technology-it" />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">SELECTED WORK</span><h2>Work that reflects <span>real needs.</span></h2><p>Project case studies will be added here as publishable work becomes available. We will not display invented client projects or placeholder testimonials.</p></div>
++      <div className="portfolio-empty glass-card"><span className="portfolio-empty-icon"><Layers3 size={27} /></span><div><span className="shop-label">PORTFOLIO IN PROGRESS</span><h3>Our project stories will appear here.</h3><p>Each published case study can explain the challenge, the approach, the solution and the outcome, with relevant visuals where permission has been obtained.</p></div></div>
++    </section>
++    <section className="page-callout section-container"><div><span className="section-kicker">HAVE A PROJECT IN MIND?</span><h2>Let&apos;s explore <span>what&apos;s possible.</span></h2><p>Tell us what you are trying to achieve and we can discuss a practical starting point.</p></div><Link className="button button-primary" href="/contact">Talk about your project <ArrowUpRight size={17} /></Link></section>
++  </>;
++}
+diff --git a/src/app/(site)/privacy/page.tsx b/src/app/(site)/privacy/page.tsx
+new file mode 100644
+index 0000000..f16a135
+--- /dev/null
++++ b/src/app/(site)/privacy/page.tsx
+@@ -0,0 +1,10 @@
++import { PageHero } from "@/components/site/page-hero";
++
++export const metadata = { title: "Privacy Information | Arkyl Ventures", description: "Privacy information for the Arkyl Ventures website." };
++
++export default function PrivacyPage() {
++  return <>
++    <PageHero eyebrow="INFORMATION" title="Your information" accent="matters." description="Arkyl Ventures recognises the importance of handling personal information carefully. This page is an interim notice while the platform's formal privacy policy and customer data processes are being finalised." />
++    <section className="page-section section-container policy-content"><div className="policy-notice"><strong>Interim privacy notice</strong><p>This page is not a final privacy policy and should not be treated as legal advice or a statement of POPIA compliance.</p></div><h2>Before submitting information</h2><p>Do not send identity documents, banking details, payment card information or other sensitive personal information through an unapproved channel. Public enquiry forms, customer accounts and online checkout will be introduced only with the appropriate privacy information and safeguards.</p><h2>Questions about privacy</h2><p>When the formal policy is approved, this page will explain what personal information is collected, why it is used, how it is stored, who may receive it, how long it is retained and how individuals may exercise their rights.</p><p>The final policy must be reviewed against the actual services, systems and data-processing arrangements used by Arkyl Ventures before publication.</p></section>
++  </>;
++}
+diff --git a/src/app/(site)/services/[slug]/page.tsx b/src/app/(site)/services/[slug]/page.tsx
+new file mode 100644
+index 0000000..9a26607
+--- /dev/null
++++ b/src/app/(site)/services/[slug]/page.tsx
+@@ -0,0 +1,24 @@
++import { notFound } from "next/navigation";
++import Link from "next/link";
++import { ArrowLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { technologyServices, businessServices } from "@/data/public-content";
++
++const allServices = [...technologyServices, ...businessServices];
++
++export function generateStaticParams() { return allServices.map((service) => ({ slug: service.slug })); }
++
++export default async function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
++  const { slug } = await params;
++  const service = allServices.find((item) => item.slug === slug);
++  if (!service) notFound();
++  const isTechnology = technologyServices.some((item) => item.slug === slug);
++  const parentHref = isTechnology ? "/technology-it" : "/business-services";
++  const parentLabel = isTechnology ? "Technology & IT" : "Business Services";
++  return <>
++    <PageHero eyebrow={parentLabel.toUpperCase()} title={service.title} accent="made practical." description={service.description} primaryLabel="Enquire about this service" primaryHref="/contact" secondaryLabel={`Back to ${parentLabel}`} secondaryHref={parentHref} />
++    <section className="page-section section-container service-detail-layout"><div><span className="section-kicker">HOW WE APPROACH IT</span><h2>Start with your <span>requirements.</span></h2><p className="service-detail-intro">Every situation is different. We begin by understanding what you need, the environment you are working in and the outcome you want to achieve. From there, we can discuss the appropriate scope, timing and next steps.</p><div className="service-detail-points"><div><CheckCircle2 size={18} /><span>Understand the requirement and current situation.</span></div><div><CheckCircle2 size={18} /><span>Discuss practical options and expected scope.</span></div><div><CheckCircle2 size={18} /><span>Confirm availability and any quotation before work begins.</span></div></div></div>
++      <aside className="service-detail-aside glass-card"><span className="section-kicker">NEXT STEP</span><h3>Let&apos;s understand what you need.</h3><p>Send an enquiry with a little context. We can then confirm whether the service is suitable and discuss the way forward.</p><Link className="button button-primary" href="/contact">Make an enquiry <ArrowUpRight size={17} /></Link><Link className="service-back-link" href={parentHref}><ArrowLeft size={15} /> Browse {parentLabel}</Link></aside></section>
++    <section className="service-disclaimer section-container"><p>Service availability, scope, pricing and delivery timeframes are confirmed individually. No outcome is guaranteed until requirements have been reviewed and agreed.</p></section>
++  </>;
++}
+diff --git a/src/app/(site)/shop/[category]/page.tsx b/src/app/(site)/shop/[category]/page.tsx
+new file mode 100644
+index 0000000..ba9121c
+--- /dev/null
++++ b/src/app/(site)/shop/[category]/page.tsx
+@@ -0,0 +1,17 @@
++import { notFound } from "next/navigation";
++import Link from "next/link";
++import { ArrowUpRight, PackageSearch } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { shopCategories } from "@/data/public-content";
++
++export function generateStaticParams() { return shopCategories.map((category) => ({ category: category.slug })); }
++
++export default async function ShopCategoryPage({ params }: { params: Promise<{ category: string }> }) {
++  const { category: slug } = await params;
++  const category = shopCategories.find((item) => item.slug === slug);
++  if (!category) notFound();
++  return <>
++    <PageHero eyebrow="ARKYL SHOP / CATEGORY" title={category.title} accent="at Arkyl." description={category.description} primaryLabel="Ask about availability" primaryHref="/contact" secondaryLabel="All shop categories" secondaryHref="/shop" />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">CATEGORY OVERVIEW</span><h2>Choose with <span>confidence.</span></h2><p>{category.detail}</p></div><div className="category-empty-state glass-card"><span className="category-empty-icon"><PackageSearch size={27} /></span><div><span className="shop-label">PRODUCTS WILL APPEAR HERE</span><h3>This category does not have published product listings yet.</h3><p>When products are added and published, they will be displayed here with their images, prices, specifications and availability information.</p><Link className="text-link" href="/contact">Enquire about this category <ArrowUpRight size={16} /></Link></div></div></section>
++  </>;
++}
+diff --git a/src/app/(site)/shop/page.tsx b/src/app/(site)/shop/page.tsx
+new file mode 100644
+index 0000000..d8a8134
+--- /dev/null
++++ b/src/app/(site)/shop/page.tsx
+@@ -0,0 +1,17 @@
++import Link from "next/link";
++import { ArrowUpRight, ShoppingBag } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { ContentCard } from "@/components/site/content-card";
++import { shopCategories } from "@/data/public-content";
++
++export const metadata = { title: "Shop | Arkyl Ventures", description: "Explore technology, smartphones, home appliances and furniture categories at Arkyl Ventures." };
++
++export default function ShopPage() {
++  return <>
++    <PageHero eyebrow="THE ARKYL SHOP" title="Useful products." accent="Considered choices." description="Explore the product areas Arkyl Ventures is building. Product availability and listings will appear as items are added and published to the catalogue." primaryLabel="Explore technology" primaryHref="/shop/technology" secondaryLabel="Ask about a product" secondaryHref="/contact" />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">SHOP BY CATEGORY</span><h2>Find the right <span>place to start.</span></h2><p>Our category structure is designed to grow beyond technology as new product ranges become available.</p></div><div className="content-card-grid shop-category-grid">{shopCategories.map((category, index) => <ContentCard key={category.slug} number={String(index + 1).padStart(2, "0")} icon={category.icon} title={category.title} description={category.description} href={`/shop/${category.slug}`} linkLabel="Explore category" />)}</div>
++      <div className="shop-catalogue-note"><ShoppingBag size={21} /><div><strong>Catalogue availability</strong><p>Only products that have been added and published will be presented as available for purchase. No sample listings or placeholder prices are shown.</p></div></div>
++    </section>
++    <section className="page-callout section-container"><div><span className="section-kicker">LOOKING FOR SOMETHING SPECIFIC?</span><h2>Ask us about a <span>product.</span></h2><p>Tell us what you are looking for and we can discuss availability or future sourcing options.</p></div><Link className="button button-primary" href="/contact">Send an enquiry <ArrowUpRight size={17} /></Link></section>
++  </>;
++}
+diff --git a/src/app/(site)/technology-it/page.tsx b/src/app/(site)/technology-it/page.tsx
+new file mode 100644
+index 0000000..70ea38b
+--- /dev/null
++++ b/src/app/(site)/technology-it/page.tsx
+@@ -0,0 +1,17 @@
++import Link from "next/link";
++import { ArrowUpRight } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { ContentCard } from "@/components/site/content-card";
++import { technologyServices } from "@/data/public-content";
++
++export const metadata = { title: "Technology & IT Services | Arkyl Ventures", description: "Explore IT support, repairs, networking, website development and custom digital solutions from Arkyl Ventures." };
++
++export default function TechnologyPage() {
++  return <>
++    <PageHero eyebrow="TECHNOLOGY & IT" title="Technology that" accent="works for you." description="From everyday technical support to websites, software and connected business tools, explore practical technology services shaped around your requirements." primaryLabel="Discuss your requirements" primaryHref="/contact" secondaryLabel="View the shop" secondaryHref="/shop/technology" />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">OUR TECHNOLOGY SERVICES</span><h2>Support for the tools <span>you depend on.</span></h2><p>Explore the areas where we can assist. The exact scope, availability and quotation are confirmed after we understand your requirements.</p></div>
++      <div className="content-card-grid">{technologyServices.map((service, index) => <ContentCard key={service.slug} number={String(index + 1).padStart(2, "0")} icon={service.icon} title={service.title} description={service.description} href={`/services/${service.slug}`} />)}</div>
++    </section>
++    <section className="page-callout section-container"><div><span className="section-kicker">NOT SURE WHERE TO START?</span><h2>Tell us what is <span>not working.</span></h2><p>Share the challenge or outcome you have in mind. We can help identify a sensible next step.</p></div><Link className="button button-primary" href="/contact">Make an enquiry <ArrowUpRight size={17} /></Link></section>
++  </>;
++}
+diff --git a/src/app/(site)/terms/page.tsx b/src/app/(site)/terms/page.tsx
+new file mode 100644
+index 0000000..b1faafa
+--- /dev/null
++++ b/src/app/(site)/terms/page.tsx
+@@ -0,0 +1,10 @@
++import { PageHero } from "@/components/site/page-hero";
++
++export const metadata = { title: "Terms & Conditions | Arkyl Ventures", description: "Terms information for the Arkyl Ventures website." };
++
++export default function TermsPage() {
++  return <>
++    <PageHero eyebrow="INFORMATION" title="Clear expectations" accent="matter." description="This page is an interim notice. The full terms governing Arkyl Ventures services, product purchases, quotations, delivery, returns and customer accounts are being prepared." />
++    <section className="page-section section-container policy-content"><div className="policy-notice"><strong>Interim terms notice</strong><p>This page is not a final set of terms and conditions and does not replace a written agreement or a legally reviewed customer policy.</p></div><h2>Service enquiries and quotations</h2><p>Information on this website is general in nature. A service description does not by itself confirm availability, scope, price, delivery time or acceptance of an engagement. These details must be confirmed with Arkyl Ventures before work begins.</p><h2>Products and availability</h2><p>Product listings, prices, stock, condition, warranty information, delivery arrangements and any applicable return terms must be confirmed at the point of sale. No purchase or payment process is enabled by this release.</p><h2>Future updates</h2><p>Before customer accounts, checkout, online payments or formal service applications are activated, the relevant terms will be completed and reviewed for the applicable business activities and South African requirements.</p></section>
++  </>;
++}
+diff --git a/src/app/globals.css b/src/app/globals.css
+index 7daaab5..3d33735 100644
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -242,3 +242,69 @@ img { max-width: 100%; display: block; }
+   .about-preview-mark { min-height: 190px; }
+   .about-preview-mark span { font-size: 76px; }
+ }
++
++
++/* V2 — dedicated public page system */
++.page-hero { min-height: 430px; display: grid; grid-template-columns: minmax(0,1.25fr) minmax(230px,.55fr); align-items: center; gap: 70px; padding-top: 82px; padding-bottom: 80px; }
++.page-hero-copy { max-width: 760px; }
++.page-hero-copy h1 { max-width: 780px; margin-top: 22px; font-size: clamp(45px,6vw,74px); line-height: 1.02; letter-spacing: -.065em; font-weight: 600; }
++.page-hero-copy h1 span, .page-section-heading h2 span, .page-callout h2 span { color: var(--color-accent); }
++.page-hero-copy > p { max-width: 660px; margin-top: 22px; color: var(--color-text-soft); font-size: 14px; line-height: 1.9; }
++.page-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
++.page-hero-aside { min-height: 260px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 28px; border-radius: 14px; }
++.page-hero-aside-mark { color: var(--color-text); font-size: 78px; font-weight: 700; letter-spacing: -.13em; line-height: 1; }
++.page-hero-aside-label { margin-top: 12px; color: var(--color-accent); font-size: 9px; font-weight: 700; letter-spacing: .22em; }
++.page-hero-aside strong { margin-top: 28px; font-size: 15px; font-weight: 600; }
++.page-hero-aside-line { width: 100%; height: 1px; margin-top: 18px; background: var(--color-border); }
++.page-hero-aside small { margin-top: 12px; color: var(--color-muted); font-size: 10px; }
++.page-section { padding-top: 55px; padding-bottom: 105px; }
++.page-section-heading { max-width: 730px; margin-bottom: 38px; }
++.page-section-heading h2, .page-callout h2 { margin-top: 16px; font-size: clamp(34px,4.4vw,52px); line-height: 1.08; letter-spacing: -.055em; }
++.page-section-heading > p { max-width: 660px; margin-top: 15px; color: var(--color-muted); font-size: 13px; line-height: 1.9; }
++.content-card-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
++.principle-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
++.content-card { min-height: 235px; display: flex; flex-direction: column; padding: 23px; border: 1px solid var(--color-border); border-radius: 12px; background: rgba(16,34,41,.62); transition: transform .2s ease,border-color .2s ease,background .2s ease; }
++.content-card:hover { transform: translateY(-3px); border-color: rgba(80,245,189,.32); background: rgba(20,43,49,.78); }
++.content-card-top { display: flex; align-items: center; justify-content: space-between; }
++.content-card-icon { width: 41px; height: 41px; display: grid; place-items: center; border-radius: 10px; color: var(--color-accent); background: rgba(80,245,189,.1); }
++.content-card-number { color: var(--color-accent); font-size: 12px; letter-spacing: .12em; }
++.content-card-arrow { color: var(--color-subtle); }
++.content-card h3 { margin-top: 25px; font-size: 15px; line-height: 1.35; font-weight: 600; }
++.content-card p { margin-top: 10px; color: var(--color-muted); font-size: 11px; line-height: 1.8; }
++.content-card-link { display: inline-flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 18px; color: var(--color-accent); font-size: 10px; font-weight: 700; }
++.page-callout { display: flex; align-items: center; justify-content: space-between; gap: 35px; margin-bottom: 100px; padding: 39px 42px; border: 1px solid rgba(80,245,189,.2); border-radius: 14px; background: radial-gradient(ellipse at 80% 30%,rgba(80,245,189,.1),transparent 48%),rgba(15,37,43,.82); }
++.page-callout > div { max-width: 690px; }
++.page-callout h2 { font-size: clamp(29px,3.5vw,42px); }
++.page-callout p { margin-top: 12px; color: var(--color-muted); font-size: 12px; line-height: 1.8; }
++.page-callout .button { flex-shrink: 0; }
++.portfolio-empty, .category-empty-state { display: flex; align-items: center; gap: 24px; padding: 32px; border-radius: 14px; }
++.portfolio-empty-icon, .category-empty-icon { width: 58px; height: 58px; flex: 0 0 58px; display: grid; place-items: center; border-radius: 12px; color: var(--color-accent); background: rgba(80,245,189,.1); }
++.portfolio-empty h3, .category-empty-state h3 { margin-top: 8px; font-size: 19px; }
++.portfolio-empty p, .category-empty-state p { max-width: 680px; margin-top: 8px; color: var(--color-muted); font-size: 11px; line-height: 1.8; }
++.portfolio-empty .shop-label, .category-empty-state .shop-label { display: inline-block; }
++.category-empty-state .text-link { margin-top: 15px; }
++.shop-catalogue-note { display: flex; align-items: flex-start; gap: 14px; margin-top: 24px; padding: 18px 20px; border: 1px solid var(--color-border); border-radius: 10px; color: var(--color-accent); background: rgba(16,34,41,.45); }
++.shop-catalogue-note strong { color: var(--color-text); font-size: 12px; }
++.shop-catalogue-note p { margin-top: 5px; color: var(--color-muted); font-size: 10px; line-height: 1.7; }
++.service-detail-layout { display: grid; grid-template-columns: 1.1fr .8fr; align-items: start; gap: 75px; }
++.service-detail-layout h2 { margin-top: 15px; font-size: clamp(34px,4vw,48px); letter-spacing: -.05em; }
++.service-detail-layout h2 span { color: var(--color-accent); }
++.service-detail-intro { max-width: 640px; margin-top: 18px; color: var(--color-muted); font-size: 13px; line-height: 1.9; }
++.service-detail-points { display: grid; gap: 16px; margin-top: 27px; }
++.service-detail-points > div { display: flex; align-items: center; gap: 12px; color: var(--color-text-soft); font-size: 12px; }
++.service-detail-points svg { flex: 0 0 auto; color: var(--color-accent); }
++.service-detail-aside { display: flex; flex-direction: column; align-items: flex-start; padding: 28px; border-radius: 13px; }
++.service-detail-aside h3 { margin-top: 18px; font-size: 22px; line-height: 1.2; }
++.service-detail-aside p { margin-top: 12px; margin-bottom: 22px; color: var(--color-muted); font-size: 11px; line-height: 1.8; }
++.service-back-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; color: var(--color-text-soft); font-size: 10px; }
++.service-disclaimer { padding-top: 0; padding-bottom: 90px; }
++.service-disclaimer p, .compliance-note { padding: 16px 18px; border-left: 2px solid var(--color-accent); background: rgba(16,34,41,.5); color: var(--color-muted); font-size: 10px; line-height: 1.8; }
++.compliance-note { margin-top: 25px; }
++@media (max-width: 1000px) { .page-hero { gap: 35px; } .principle-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .content-card-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
++@media (max-width: 700px) { .page-hero { min-height: auto; grid-template-columns: 1fr; gap: 28px; padding-top: 65px; padding-bottom: 55px; } .page-hero-copy h1 { font-size: clamp(43px,11vw,62px); } .page-hero-aside { min-height: 205px; } .page-section { padding-top: 35px; padding-bottom: 75px; } .content-card-grid,.principle-grid { grid-template-columns: 1fr; } .content-card { min-height: 205px; } .page-callout { align-items: flex-start; flex-direction: column; margin-bottom: 75px; padding: 28px 24px; } .portfolio-empty,.category-empty-state { align-items: flex-start; flex-direction: column; padding: 24px; } .service-detail-layout { grid-template-columns: 1fr; gap: 30px; } .service-disclaimer { padding-bottom: 65px; } }
++.policy-content { max-width: 900px; }
++.policy-content h2 { margin-top: 35px; font-size: 19px; letter-spacing: -.025em; }
++.policy-content > p { max-width: 800px; margin-top: 12px; color: var(--color-muted); font-size: 12px; line-height: 1.9; }
++.policy-notice { padding: 19px 21px; border: 1px solid rgba(80,245,189,.2); border-radius: 10px; background: rgba(16,34,41,.6); }
++.policy-notice strong { color: var(--color-accent); font-size: 12px; }
++.policy-notice p { margin-top: 7px; color: var(--color-muted); font-size: 11px; line-height: 1.8; }
+diff --git a/src/components/layout/site-footer.tsx b/src/components/layout/site-footer.tsx
+index 015d941..4cae88d 100644
+--- a/src/components/layout/site-footer.tsx
++++ b/src/components/layout/site-footer.tsx
+@@ -18,7 +18,7 @@ export function SiteFooter() {
+             <span className="brand-name">ARKYL <strong>VENTURES</strong></span>
+           </Link>
+           <p>Practical technology and business solutions that move ideas forward.</p>
+-          <Link className="footer-contact-link" href="/#contact">Start a conversation <ArrowUpRight size={16} /></Link>
++          <Link className="footer-contact-link" href="/contact">Start a conversation <ArrowUpRight size={16} /></Link>
+         </div>
+         {footerGroups.map((group) => (
+           <div className="footer-link-group" key={group.title}>
+diff --git a/src/components/layout/site-header.tsx b/src/components/layout/site-header.tsx
+index 17b1723..420bcaf 100644
+--- a/src/components/layout/site-header.tsx
++++ b/src/components/layout/site-header.tsx
+@@ -7,10 +7,10 @@ import { ArkylMark } from "@/components/site/arkyl-mark";
+ 
+ const links = [
+   { label: "Home", href: "/" },
+-  { label: "Technology & IT", href: "/#technology" },
+-  { label: "Business Services", href: "/#business-services" },
+-  { label: "Shop", href: "/#shop" },
+-  { label: "About", href: "/#about" },
++  { label: "Technology & IT", href: "/technology-it" },
++  { label: "Business Services", href: "/business-services" },
++  { label: "Shop", href: "/shop" },
++  { label: "About", href: "/about" },
+ ];
+ 
+ export function SiteHeader() {
+@@ -30,7 +30,7 @@ export function SiteHeader() {
+           ))}
+         </nav>
+ 
+-        <Link className="header-cta" href="/#contact">
++        <Link className="header-cta" href="/contact">
+           Get started <ArrowUpRight size={16} strokeWidth={1.8} />
+         </Link>
+ 
+@@ -50,7 +50,7 @@ export function SiteHeader() {
+           {links.map((link) => (
+             <Link href={link.href} key={link.label} onClick={() => setMenuOpen(false)}>{link.label}</Link>
+           ))}
+-          <Link href="/#contact" onClick={() => setMenuOpen(false)}>Get started <ArrowUpRight size={16} /></Link>
++          <Link href="/contact" onClick={() => setMenuOpen(false)}>Get started <ArrowUpRight size={16} /></Link>
+         </nav>
+       )}
+     </header>
+diff --git a/src/components/site/content-card.tsx b/src/components/site/content-card.tsx
+new file mode 100644
+index 0000000..9ee8327
+--- /dev/null
++++ b/src/components/site/content-card.tsx
+@@ -0,0 +1,26 @@
++import type { LucideIcon } from "lucide-react";
++import Link from "next/link";
++import { ArrowUpRight } from "lucide-react";
++
++export type ContentCardProps = {
++  number?: string;
++  icon?: LucideIcon;
++  title: string;
++  description: string;
++  href?: string;
++  linkLabel?: string;
++};
++
++export function ContentCard({ number, icon: Icon, title, description, href, linkLabel = "Explore service" }: ContentCardProps) {
++  return (
++    <article className="content-card">
++      <div className="content-card-top">
++        {Icon ? <span className="content-card-icon"><Icon size={20} /></span> : <span className="content-card-number">{number ?? "AV"}</span>}
++        <ArrowUpRight size={17} className="content-card-arrow" />
++      </div>
++      <h3>{title}</h3>
++      <p>{description}</p>
++      {href ? <Link className="content-card-link" href={href}>{linkLabel}<ArrowUpRight size={15} /></Link> : null}
++    </article>
++  );
++}
+diff --git a/src/components/site/page-hero.tsx b/src/components/site/page-hero.tsx
+new file mode 100644
+index 0000000..de8a7b5
+--- /dev/null
++++ b/src/components/site/page-hero.tsx
+@@ -0,0 +1,38 @@
++import Link from "next/link";
++import { ArrowUpRight } from "lucide-react";
++
++type PageHeroProps = {
++  eyebrow: string;
++  title: string;
++  accent: string;
++  description: string;
++  primaryLabel?: string;
++  primaryHref?: string;
++  secondaryLabel?: string;
++  secondaryHref?: string;
++};
++
++export function PageHero({ eyebrow, title, accent, description, primaryLabel, primaryHref, secondaryLabel, secondaryHref }: PageHeroProps) {
++  return (
++    <section className="page-hero section-container">
++      <div className="page-hero-copy">
++        <span className="section-kicker"><span className="eyebrow-line" />{eyebrow}</span>
++        <h1>{title} <span>{accent}</span></h1>
++        <p>{description}</p>
++        {(primaryLabel && primaryHref) || (secondaryLabel && secondaryHref) ? (
++          <div className="page-hero-actions">
++            {primaryLabel && primaryHref ? <Link className="button button-primary" href={primaryHref}>{primaryLabel}<ArrowUpRight size={17} /></Link> : null}
++            {secondaryLabel && secondaryHref ? <Link className="button button-outline" href={secondaryHref}>{secondaryLabel}<ArrowUpRight size={17} /></Link> : null}
++          </div>
++        ) : null}
++      </div>
++      <div className="page-hero-aside glass-card">
++        <span className="page-hero-aside-mark">AV</span>
++        <span className="page-hero-aside-label">ARKYL VENTURES</span>
++        <strong>Where Possibilities Begin.</strong>
++        <span className="page-hero-aside-line" />
++        <small>Technology · Business · Possibility</small>
++      </div>
++    </section>
++  );
++}
+diff --git a/src/data/public-content.ts b/src/data/public-content.ts
+new file mode 100644
+index 0000000..729cf3e
+--- /dev/null
++++ b/src/data/public-content.ts
+@@ -0,0 +1,40 @@
++import { Code2, Headphones, Laptop, Network, Smartphone, Wrench, Globe2, Mail, Database, BriefcaseBusiness, FileText, Building2, ClipboardList, Users, BadgeHelp, Palette, Workflow, ShieldCheck, MonitorCog } from "lucide-react";
++
++export const technologyServices = [
++  { slug: "it-support", title: "IT Support", description: "Practical technical assistance for workstations, software, user accounts and everyday technology challenges.", icon: Headphones },
++  { slug: "computer-repairs", title: "Computer Repairs", description: "Troubleshooting, diagnosis, maintenance and repair support for desktop computers and related equipment.", icon: Wrench },
++  { slug: "laptop-repairs", title: "Laptop Repairs", description: "Support for laptop faults, performance issues, upgrades and hardware-related problems.", icon: Laptop },
++  { slug: "phone-repairs", title: "Phone Repairs", description: "Device assessment and repair coordination for common smartphone faults and damage.", icon: Smartphone },
++  { slug: "hardware-software-installation", title: "Hardware & Software Installation", description: "Installation, configuration and setup of business and personal hardware and software.", icon: MonitorCog },
++  { slug: "networking-connectivity", title: "Networking & Connectivity", description: "Network setup, connectivity troubleshooting and practical support for connected environments.", icon: Network },
++  { slug: "website-development", title: "Website Development", description: "Responsive websites that communicate your offering and give customers a clear way to engage.", icon: Globe2 },
++  { slug: "ecommerce-development", title: "Ecommerce Development", description: "Online store experiences designed around your products, customers and operating needs.", icon: Code2 },
++  { slug: "custom-software-development", title: "Custom Software Development", description: "Purpose-built applications and digital tools for specific business processes.", icon: Code2 },
++  { slug: "business-management-systems", title: "Business Management Systems", description: "Systems that help organise information, workflows and day-to-day business operations.", icon: Workflow },
++  { slug: "domain-hosting", title: "Domain Registration & Hosting", description: "Guidance with domain names, hosting arrangements and getting your online presence set up.", icon: Globe2 },
++  { slug: "professional-email", title: "Professional Email Setup", description: "Business email setup using your domain and the tools your team already works with.", icon: Mail },
++  { slug: "microsoft-365", title: "Microsoft 365 Setup", description: "Setup assistance for Microsoft 365 accounts, collaboration tools and productivity services.", icon: MonitorCog },
++  { slug: "google-workspace", title: "Google Workspace Setup", description: "Configuration guidance for business email, collaboration and Google Workspace tools.", icon: Users },
++  { slug: "database-api-development", title: "Database & API Development", description: "Structured data solutions and integrations that help applications exchange information.", icon: Database },
++  { slug: "it-consulting-procurement", title: "IT Consulting & Procurement", description: "Practical technology guidance to help assess requirements and make informed purchasing decisions.", icon: BadgeHelp },
++];
++
++export const businessServices = [
++  { slug: "business-registration-assistance", title: "Business Registration Assistance", description: "Guidance through the information and administrative steps involved in establishing a business.", icon: Building2 },
++  { slug: "business-startup-assistance", title: "Business Startup Assistance", description: "Practical support to help organise early business requirements and plan the next steps.", icon: BriefcaseBusiness },
++  { slug: "business-documentation", title: "Business Documentation", description: "Help preparing and organising business documents for day-to-day operations.", icon: FileText },
++  { slug: "company-profiles", title: "Company Profiles", description: "Clear, professional company profiles that introduce your business, services and capabilities.", icon: ClipboardList },
++  { slug: "business-administration-support", title: "Business Administration Support", description: "Administrative assistance to help keep business information and routine processes organised.", icon: Users },
++  { slug: "business-consulting", title: "Business Consulting", description: "A structured conversation about your business needs, challenges and possible next steps.", icon: BadgeHelp },
++  { slug: "business-support", title: "Business Support", description: "Flexible support for practical business tasks, planning and operational requirements.", icon: Workflow },
++  { slug: "micro-loan-enquiries", title: "Micro Loan Enquiries", description: "An enquiry pathway for people interested in exploring potential financing options, subject to eligibility and assessment.", icon: ShieldCheck },
++  { slug: "graphic-design-branding", title: "Graphic Design & Branding", description: "Visual identity and communication materials that help present your business consistently.", icon: Palette },
++  { slug: "business-automation", title: "Business Automation", description: "Identify repeatable tasks and explore digital workflows that can reduce manual effort.", icon: Workflow },
++];
++
++export const shopCategories = [
++  { slug: "technology", title: "Technology & IT", description: "Computers, smartphones, accessories, components and connected technology for work and everyday life.", icon: MonitorCog, detail: "A dedicated technology destination for devices, computing equipment and accessories." },
++  { slug: "smartphones-iphones", title: "Smartphones & iPhones", description: "Explore smartphone options, including new and pre-owned devices as stock becomes available.", icon: Smartphone, detail: "Device information will clearly identify model, storage, condition and relevant warranty details." },
++  { slug: "home-appliances", title: "Home Appliances", description: "A growing range of practical appliances for the home, subject to availability.", icon: Workflow, detail: "Product listings will provide the key specifications customers need to compare appliances." },
++  { slug: "furniture-lifestyle", title: "Furniture & Lifestyle", description: "Furniture and useful household products for workspaces and everyday living.", icon: BriefcaseBusiness, detail: "Category information and product specifications will be provided as products are added." },
++];
