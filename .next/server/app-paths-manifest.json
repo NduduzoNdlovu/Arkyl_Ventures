@@ -1,8 +1,9 @@
 {
   "/(site)/services/[slug]/page": "app/(site)/services/[slug]/page.js",
-  "/(site)/page": "app/(site)/page.js",
   "/(site)/technology-it/page": "app/(site)/technology-it/page.js",
   "/(site)/about/page": "app/(site)/about/page.js",
   "/(site)/services/page": "app/(site)/services/page.js",
-  "/(site)/shop/page": "app/(site)/shop/page.js"
+  "/(site)/page": "app/(site)/page.js",
+  "/(site)/shop/page": "app/(site)/shop/page.js",
+  "/(site)/business-services/page": "app/(site)/business-services/page.js"
 }
