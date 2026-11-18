@@ -147,6 +147,42 @@ img {
   font-size: 44px;
 }
 
+.background-star-three{
+  top: 200px;
+  left: 35%;
+  font-size: 26px;
+}
+
+.background-star-four {
+  top: 680px;
+  right: 78%;
+  font-size: 40px;
+}
+
+.background-star-five {
+  top: 460px;
+  left: 50%;
+  font-size: 26px;
+}
+
+.background-star-six{
+  top: 480px;
+  right: 15%;
+  font-size: 44px;
+}
+
+.background-star-seven {
+  top: 260px;
+  left: 8%;
+  font-size: 26px;
+}
+
+.background-star-eight {
+  top: 180px;
+  right: 9%;
+  font-size: 44px;
+}
+/* hero-orbit hero-orbit-one */
 .site-header {
   position: fixed !important;
   inset: 0 0 auto;
@@ -391,7 +427,8 @@ img {
   position: absolute;
   left: 50%;
   top: 50%;
-  border: 1px solid rgba(80, 245, 189, .15);
+    /* border: 1px solid rgba(80, 245, 189, .15); */
+  border: 1px solid rgba(80, 245, 190, 0.253);
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }
@@ -404,7 +441,8 @@ img {
 .hero-orbit-two {
   width: 550px;
   height: 550px;
-  border-color: rgba(164, 184, 190, .1);
+  /* border-color: rgba(164, 184, 190, .1); */
+  border: 1px solid rgba(80, 245, 190, 0.123);
 }
 
 .glass-card {
@@ -2996,7 +3034,7 @@ img {
   -webkit-backdrop-filter: blur(18px);
 }
 
-.hero-showcase-card[data-position="0"] {
+/* .hero-showcase-card[data-position="0"] {
   z-index: 5;
   translate: -50% -48%;
   rotate: -1deg;
@@ -3009,14 +3047,48 @@ img {
   translate: -37% -65%;
   rotate: 7deg;
   filter: saturate(.72);
-}
+} */
 
-.hero-showcase-card[data-position="2"] {
+/* .hero-showcase-card[data-position="2"] {
   z-index: 2;
   translate: -64% -31%;
   rotate: -8deg;
   filter: saturate(.55);
+} */
+
+
+/* Previous card - top */
+.hero-showcase-card[data-position="0"] {
+    z-index: 2;
+    translate: -50% -50%;
+    rotate: 0deg;
+    filter: saturate(.55);
+    pointer-events: none;
 }
+
+/* Active card - centre */
+.hero-showcase-card[data-position="1"] {
+    z-index: 5;
+    translate: -50% -50%;
+    rotate: 0deg;
+    border-color: rgba(80, 245, 189, .34);
+    pointer-events: auto;
+}
+
+/* Next card - bottom */
+.hero-showcase-card[data-position="2"] {
+    z-index: 3;
+    translate: -50% -50%;
+    rotate: 0deg;
+    filter: saturate(.72);
+    pointer-events: none;
+}
+
+/* Only the centre card is interactive */
+.hero-showcase-card[data-position="1"] .hero-showcase-card-link {
+    pointer-events: auto;
+}
+
 
 .hero-showcase-card-link {
   display: block;
@@ -3024,9 +3096,9 @@ img {
   text-decoration: none;
 }
 
-.hero-showcase-card[data-position="0"] .hero-showcase-card-link {
+/* .hero-showcase-card[data-position="0"] .hero-showcase-card-link {
   pointer-events: auto;
-}
+} */
 
 .showcase-card-topline,
 .showcase-card-main,
@@ -3053,7 +3125,7 @@ img {
 .showcase-card-main {
   margin-top: 21px;
 }
-
+ background-star-one
 .showcase-card-icon {
   display: grid;
   place-items: center;
@@ -3064,7 +3136,7 @@ img {
   background: rgba(80, 245, 189, .09);
   color: var(--color-accent);
 }
-
+/* opacity: position === 1 ? 1 : position === 0 ? 0.25 : 0.42, */
 .showcase-card-arrow {
   display: grid;
   place-items: center;
@@ -3280,4 +3352,80 @@ img {
   .hero-showcase-card {
     transition: none !important;
   }
+}
+
+/* .hero-image-wrap {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-robot {
+    object-fit: cover;
+    object-position: center center;
+    width: 100%;
+    height: 100%;
+} */
+
+.hero-section {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+.hero-background {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+    /* border-radius: 30px; */
+
+}
+
+.hero-robot {
+    object-fit: contain;
+    object-position: center center;
+    width: 100%;
+    height: 100%;
+    opacity: 0.25;
+}
+
+.hero-copy,
+.hero-visual,
+.hero-bottom-note {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-robot {
+    object-fit: cover;
+
+    -webkit-mask-image: radial-gradient(
+        ellipse at center,
+        #000 40%,
+        rgba(0, 0, 0, 0.85) 60%,
+        rgba(0, 0, 0, 0.4) 80%,
+        transparent 100%
+    );
+
+    mask-image: radial-gradient(
+        ellipse at center,
+        #000 40%,
+        rgba(0, 0, 0, 0.85) 60%,
+        rgba(0, 0, 0, 0.4) 80%,
+        transparent 100%
+    );
+}
+
+.arkyl-mark img {
+    filter:
+        drop-shadow(0 0 5px rgba(80, 245, 190, 0.151))
+        drop-shadow(0 0 12px rgba(80, 245, 189, 0.18));
+
+    transition: filter 0.3s ease;
 }

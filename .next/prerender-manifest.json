@@ -1,11 +1,1 @@
-{
-  "version": 4,
-  "routes": {},
-  "dynamicRoutes": {},
-  "notFoundRoutes": [],
-  "preview": {
-    "previewModeId": "0bd1d0589d52a319dc19e3c313a3c682",
-    "previewModeSigningKey": "774d510c08ab1f662f70305730d4578ce2bfeacc4d78a18dc16fe000fdc1ae7b",
-    "previewModeEncryptionKey": "f3a5764eede00af6caba19e8148cba5ad09333abb4f2b7af376188b26e2d65a7"
-  }
-}
+{"version":4,"routes":{"/shop/technology":{},"/shop/smartphones-iphones":{},"/shop/home-appliances":{},"/shop/furniture-lifestyle":{}},"dynamicRoutes":{"/shop/[category]":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/shop/[category]","routeRegex":"^\\/shop\\/([^/]+?)(?:\\/)?$","allowHeader":[]}},"notFoundRoutes":[],"preview":{"previewModeId":"0bd1d0589d52a319dc19e3c313a3c682","previewModeSigningKey":"774d510c08ab1f662f70305730d4578ce2bfeacc4d78a18dc16fe000fdc1ae7b","previewModeEncryptionKey":"f3a5764eede00af6caba19e8148cba5ad09333abb4f2b7af376188b26e2d65a7"}}

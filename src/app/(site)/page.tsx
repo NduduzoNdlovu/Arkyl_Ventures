@@ -69,6 +69,17 @@ export default async function HomePage() {
   return (
     <>
       <section className="hero-section section-container" aria-labelledby="hero-title">
+            <div className="hero-background">
+        <Image
+            src="/images/robot.webp"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="hero-robot"
+            aria-hidden="true"
+        />
+    </div>
         <ScrollReveal className="hero-copy">
           <div className="eyebrow"><span className="eyebrow-line" /> TECHNOLOGY. BUSINESS. POSSIBILITIES.</div>
           <h1 id="hero-title">Move your ideas <span>forward.</span></h1>
@@ -83,9 +94,9 @@ export default async function HomePage() {
         <div className="hero-visual" aria-label="Arkyl Ventures featured capabilities">
           <div className="hero-orbit hero-orbit-one" />
           <div className="hero-orbit hero-orbit-two" />
-          <div className="hero-image-wrap">
+          {/* <div className="hero-image-wrap">
             <Image src="/images/arkyl.png" alt="" fill priority sizes="(max-width: 900px) 80vw, 560px" className="hero-robot" aria-hidden="true" />
-          </div>
+          </div> */}
           <HeroShowcase items={showcaseServices} />
           <div className="hero-side-note">WHERE POSSIBILITIES BEGIN</div>
         </div>

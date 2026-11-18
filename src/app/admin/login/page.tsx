@@ -13,10 +13,23 @@ export default async function AdminLoginPage() {
   return (
     <main className="admin-auth-page">
       <section className="admin-auth-card">
-        <Link href="/" className="admin-auth-brand"><span>AV</span><strong>ARKYL <em>VENTURES</em></strong></Link>
-        <div className="admin-auth-heading"><span className="admin-eyebrow">SECURE ADMINISTRATION</span><h1>Welcome back.</h1><p>Sign in to manage Arkyl Ventures services and website visibility.</p></div>
+        <Link href="/" className="admin-auth-brand">
+          <span>AV</span>
+          <strong>
+            ARKYL <em>VENTURES</em>
+          </strong>
+        </Link>
+        <div className="admin-auth-heading">
+          <span className="admin-eyebrow">SECURE ADMINISTRATION</span>
+          <h1>Welcome back.</h1>
+          <p>
+            Sign in to manage Arkyl Ventures services and website visibility.
+          </p>
+        </div>
         <LoginForm />
-        <Link href="/" className="admin-auth-back"><ArrowLeft size={14} /> Return to the public website</Link>
+        <Link href="/" className="admin-auth-back">
+          <ArrowLeft size={14} /> Return to the public website
+        </Link>
       </section>
     </main>
   );
