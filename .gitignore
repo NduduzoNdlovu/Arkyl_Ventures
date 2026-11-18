@@ -41,3 +41,12 @@ Thumbs.db
 *.tmp
 *.bak
 *.swp
+
+node_modules/
+.next/
+out/
+dist/
+build/
+.env
+.env.local
+.env.*.local

@@ -3,5 +3,7 @@
   "/(site)/shop/page": "app/(site)/shop/page.js",
   "/(site)/shop/[category]/page": "app/(site)/shop/[category]/page.js",
   "/(site)/page": "app/(site)/page.js",
+  "/(site)/technology-it/page": "app/(site)/technology-it/page.js",
+  "/(site)/services/page": "app/(site)/services/page.js",
   "/(site)/business-services/page": "app/(site)/business-services/page.js"
 }
