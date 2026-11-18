@@ -1,15 +1,43 @@
-node_modules\n.next\n.env\n.env.*\n!.env.example\ndist\nbuild\ncoverage\nEOF
-cat > .env.example <<'EOF'
-# PostgreSQL connection string
-DATABASE_URL="postgresql://postgres:password@localhost:5432/arkyl_ventures?schema=public"
 
-# Generate a long random value before deployment
-AUTH_SECRET="replace-with-a-long-random-secret"
-AUTH_URL="http://localhost:3000"
+# Dependencies
+node_modules/
 
-# Initial administrator bootstrap. Use a unique password and remove these
-# variables after creating the first admin account.
-ADMIN_EMAIL="admin@example.com"
-ADMIN_PASSWORD="CHANGE-THIS-IMMEDIATELY"
+# Next.js
+.next/
+out/
 
-# Object storage / email / payment integrations will be configured in later phases.
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Deployment
+.vercel/
+
+# Editor and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp

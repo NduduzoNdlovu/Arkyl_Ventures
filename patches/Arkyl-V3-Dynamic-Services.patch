@@ -1,0 +1,2086 @@
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..6f17374
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,8 @@
++DATABASE_URL="postgresql://postgres:password@localhost:5432/arkyl_ventures?schema=public"
++AUTH_SECRET="replace-with-a-long-random-secret-at-least-32-characters"
++AUTH_URL="http://localhost:3000"
++
++# Used once by npm run db:seed-admin to create the first SUPER_ADMIN.
++ADMIN_NAME="Arkyl Administrator"
++ADMIN_EMAIL="admin@example.com"
++ADMIN_PASSWORD="CHANGE-THIS-TO-A-UNIQUE-PASSWORD-12-CHARACTERS-MINIMUM"
+diff --git a/README.md b/README.md
+index 8862f18..797c7c1 100644
+--- a/README.md
++++ b/README.md
+@@ -16,17 +16,23 @@ A Next.js + TypeScript business website and commerce platform foundation for ARK
+ ```powershell
+ npm install
+ npx prisma generate
+-npx prisma migrate dev --name initial_schema
++npx prisma migrate dev
++npm run db:seed-admin
+ npm run dev
+ ```
+ 
+-5. Open http://localhost:3000.
++5. Open http://localhost:3000. The initial administrator is created by the bootstrap script; remove `ADMIN_PASSWORD` from `.env` afterwards.
+ 
+ ## Current foundation
+ - ARKYL dark technology visual identity and responsive homepage.
+ - PostgreSQL Prisma schema for administrators, customers, products, categories, images, service requests, attachments, notes, quotations, orders, payments, inventory movements and audit logs.
+ - Database health endpoint at `/api/health`.
+-- Public route and admin route structure reserved for phased implementation.
++- Public website pages, a database-driven service directory and a protected service-management area at `/admin`.
+ 
+ ## Important before production
+-This is the initial foundation, not a production-ready store yet. Do not accept real payments or public uploads until authentication, server-side authorization, validated request/product APIs, secure object storage, payment-provider verification, email delivery, rate limiting, backups and end-to-end tests have been implemented. Keep secrets out of source control.
++The service-management phase is implemented, but the overall platform is not yet a production-ready store. Do not accept real payments or public uploads until the relevant customer workflows, validated APIs, secure object storage, payment-provider verification, email delivery, rate limiting, backups and end-to-end tests have been implemented. Keep secrets out of source control.
++
++## V3 — Dynamic service management
++V3 adds a separate database-backed service catalogue (`ServiceCategory` and `Service`) without changing the existing product `Category` model. The public Technology & IT, Business Services, homepage and individual service pages now read published and visible services from PostgreSQL.
++
++The focused administration area is available at `/admin`. It includes credentials-based administrator sign-in, service creation/editing, publication and visibility controls, safe archiving, service category creation/activation and audit-log entries. The first administrator is created using the one-time bootstrap script described in `patches/Arkyl-V3-PATCH-INSTRUCTIONS.md`.
+diff --git a/package.json b/package.json
+index 84317be..3e71025 100644
+--- a/package.json
++++ b/package.json
+@@ -10,7 +10,8 @@
+     "db:generate": "prisma generate",
+     "db:migrate": "prisma migrate dev",
+     "db:deploy": "prisma migrate deploy",
+-    "db:studio": "prisma studio"
++    "db:studio": "prisma studio",
++    "db:seed-admin": "node --env-file=.env scripts/create-admin.mjs"
+   },
+   "dependencies": {
+     "@prisma/client": "^6.19.0",
+diff --git a/patches/Arkyl-V3-PATCH-INSTRUCTIONS.md b/patches/Arkyl-V3-PATCH-INSTRUCTIONS.md
+new file mode 100644
+index 0000000..be6cc87
+--- /dev/null
++++ b/patches/Arkyl-V3-PATCH-INSTRUCTIONS.md
+@@ -0,0 +1,160 @@
++# Arkyl Ventures — V3 Patch Installation
++
++## Release
++
++**V3 — Dynamic Services Management**
++
++This patch is built against the supplied latest project ZIP, with V1 and V2 already applied. Do not apply it to the untouched V1 project.
++
++## Included
++
++- New `ServiceCategory` and `Service` Prisma models. The existing product `Category` model is unchanged.
++- Additive PostgreSQL migration that creates service tables and seeds the existing 26 V2 services into two service categories, preserving the current public catalogue after migration.
++- Database-driven Technology & IT, Business Services, homepage service previews and individual service detail pages.
++- Public pages show a service only when its status is `PUBLISHED`, its `isVisible` flag is enabled, and its category is active.
++- Administrator sign-in using the existing `AdminUser` table, bcrypt password hashes and NextAuth Credentials.
++- A one-time first-super-admin bootstrap script. Existing administrator accounts are never overwritten by the script.
++- Service administration: create, edit, draft, publish, show, hide and archive. Archiving keeps the database record; it does not hard-delete it.
++- Service category administration: create, activate and deactivate.
++- Audit log records for service and category management actions.
++- Responsive administration screens using the existing Arkyl dark teal and mint design system.
++
++## Scope notes
++
++- The ZIP supplied for V3 did **not** contain an implemented admin login or dashboard, despite the master prompt describing those as existing. V3 therefore adds the minimum secure sign-in and admin shell required to protect service management. It does not attempt to build the complete Phase 7 administration dashboard.
++- Service image support in this release is an optional HTTP/HTTPS image URL. It does not upload files or introduce local disk storage. A secure media-storage provider should be selected before adding uploads, especially for production hosting.
++- `acceptsApplications` and `requiresQuote` are service configuration flags. Application submission workflows and configurable enquiry forms belong to the later business application phase.
++- Existing service records are seeded as published and visible to preserve the V2 public experience. You can hide or archive any service from the admin area after migration.
++- No product, order, payment, inventory or customer tables are dropped or reset. No new npm dependency is introduced.
++
++## 1. Back up the current V2 project
++
++Open Command Prompt in:
++
++```cmd
++C:\Users\Nduduzo_Ndlovu\Documents\My Sites\Arkyl Ventures
++```
++
++If using Git, commit the current working version first:
++
++```cmd
++git status
++git add .
++git commit -m "Backup before Arkyl V3"
++```
++
++Otherwise, make a full copy of the project folder.
++
++## 2. Copy and check the patch
++
++Place `Arkyl-V3-Dynamic-Services.patch` inside the project's `patches` folder. Then run:
++
++```cmd
++git apply --check .\patches\Arkyl-V3-Dynamic-Services.patch
++```
++
++Only if there are no errors, apply it:
++
++```cmd
++git apply .\patches\Arkyl-V3-Dynamic-Services.patch
++```
++
++Do not use `git apply --reject` or force a partial application.
++
++## 3. Configure the existing `.env`
++
++**Do not replace your existing `.env` file and do not change its working `DATABASE_URL`.** Add the following values if they are missing:
++
++```env
++AUTH_SECRET="paste-a-long-random-secret-of-at-least-32-characters"
++AUTH_URL="http://localhost:3000"
++ADMIN_NAME="Arkyl Administrator"
++ADMIN_EMAIL="your-admin-email@example.com"
++ADMIN_PASSWORD="use-a-unique-password-at-least-12-characters-long"
++```
++
++Keep the bootstrap password private. Do not commit `.env` to Git.
++
++## 4. Generate Prisma Client and apply the migration
++
++Run these commands in order:
++
++```cmd
++npx prisma format
++npx prisma generate
++npx prisma migrate dev
++```
++
++The migration is additive. It creates the service tables and inserts the existing public service catalogue. It does not reset the database. Do not run `prisma migrate reset`.
++
++For a production deployment, apply the committed migration with:
++
++```cmd
++npx prisma migrate deploy
++```
++
++## 5. Create the first super administrator
++
++Run:
++
++```cmd
++npm run db:seed-admin
++```
++
++The script creates a `SUPER_ADMIN` only if the configured email does not already exist. If an account already exists, it leaves that account unchanged. Once the account has been created, remove `ADMIN_PASSWORD` from `.env` (keep `AUTH_SECRET`).
++
++## 6. Validate the project
++
++Run:
++
++```cmd
++npx tsc --noEmit
++npm run build
++```
++
++Then start the application:
++
++```cmd
++npm run dev
++```
++
++## 7. Test the functionality
++
++Public pages:
++
++- `http://localhost:3000/`
++- `http://localhost:3000/technology-it`
++- `http://localhost:3000/business-services`
++- `http://localhost:3000/services`
++- `http://localhost:3000/services/category/technology-it`
++- `http://localhost:3000/services/it-support`
++- `http://localhost:3000/services/website-development`
++
++Administration:
++
++- `http://localhost:3000/admin/login`
++- `http://localhost:3000/admin`
++- `http://localhost:3000/admin/services`
++- `http://localhost:3000/admin/services/new`
++- `http://localhost:3000/admin/service-categories`
++
++Check the following:
++
++1. Sign in using the first super administrator account.
++2. Create a new service under an active category and save it as a draft. Confirm it does not appear publicly.
++3. Change the status to Published but leave public visibility unchecked. Confirm it remains hidden.
++4. Enable public visibility. Confirm it appears in its category page and its individual `/services/<slug>` page.
++5. Hide it again. Confirm the public listing and direct service URL no longer expose it.
++6. Deactivate its category. Confirm all services in that category are hidden publicly.
++7. Archive a service and confirm its record remains in the admin list but is not public.
++8. Confirm service/category changes create audit log entries.
++9. Sign out and confirm `/admin` redirects to `/admin/login`.
++
++## 8. Send back the results
++
++Please send the complete output of:
++
++- `npx tsc --noEmit`
++- `npm run build`
++
++Also send any browser or migration errors. Do not run `npm audit fix --force` as part of this patch.
+diff --git a/prisma/migrations/20261118000500_dynamic_services/migration.sql b/prisma/migrations/20261118000500_dynamic_services/migration.sql
+new file mode 100644
+index 0000000..6b9905c
+--- /dev/null
++++ b/prisma/migrations/20261118000500_dynamic_services/migration.sql
+@@ -0,0 +1,83 @@
++-- Additive V3 migration: separate service catalogue from product categories.
++CREATE TYPE "ServiceStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
++
++CREATE TABLE "ServiceCategory" (
++    "id" TEXT NOT NULL,
++    "name" TEXT NOT NULL,
++    "slug" TEXT NOT NULL,
++    "description" TEXT,
++    "active" BOOLEAN NOT NULL DEFAULT true,
++    "sortOrder" INTEGER NOT NULL DEFAULT 0,
++    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    "updatedAt" TIMESTAMP(3) NOT NULL,
++    CONSTRAINT "ServiceCategory_pkey" PRIMARY KEY ("id")
++);
++
++CREATE TABLE "Service" (
++    "id" TEXT NOT NULL,
++    "name" TEXT NOT NULL,
++    "slug" TEXT NOT NULL,
++    "shortDescription" TEXT NOT NULL,
++    "description" TEXT NOT NULL,
++    "icon" TEXT NOT NULL DEFAULT 'BriefcaseBusiness',
++    "heroImageUrl" TEXT,
++    "status" "ServiceStatus" NOT NULL DEFAULT 'DRAFT',
++    "isVisible" BOOLEAN NOT NULL DEFAULT false,
++    "featured" BOOLEAN NOT NULL DEFAULT false,
++    "requiresQuote" BOOLEAN NOT NULL DEFAULT true,
++    "acceptsApplications" BOOLEAN NOT NULL DEFAULT false,
++    "startingPrice" DECIMAL(12,2),
++    "priceLabel" TEXT,
++    "sortOrder" INTEGER NOT NULL DEFAULT 0,
++    "seoTitle" TEXT,
++    "seoDescription" TEXT,
++    "categoryId" TEXT NOT NULL,
++    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    "updatedAt" TIMESTAMP(3) NOT NULL,
++    "deletedAt" TIMESTAMP(3),
++    CONSTRAINT "Service_pkey" PRIMARY KEY ("id")
++);
++
++CREATE UNIQUE INDEX "ServiceCategory_name_key" ON "ServiceCategory"("name");
++CREATE UNIQUE INDEX "ServiceCategory_slug_key" ON "ServiceCategory"("slug");
++CREATE INDEX "ServiceCategory_active_sortOrder_idx" ON "ServiceCategory"("active", "sortOrder");
++CREATE UNIQUE INDEX "Service_slug_key" ON "Service"("slug");
++CREATE INDEX "Service_status_isVisible_categoryId_idx" ON "Service"("status", "isVisible", "categoryId");
++CREATE INDEX "Service_featured_sortOrder_idx" ON "Service"("featured", "sortOrder");
++CREATE INDEX "Service_name_idx" ON "Service"("name");
++
++ALTER TABLE "Service" ADD CONSTRAINT "Service_categoryId_fkey"
++FOREIGN KEY ("categoryId") REFERENCES "ServiceCategory"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
++
++-- Seed the existing V2 public catalogue so the public site remains populated after migration.
++INSERT INTO "ServiceCategory" ("id", "name", "slug", "description", "active", "sortOrder", "updatedAt") VALUES
++('svc_cat_technology', 'Technology & IT', 'technology-it', 'Technology, IT support and digital solutions.', true, 1, CURRENT_TIMESTAMP),
++('svc_cat_business', 'Business Services', 'business-services', 'Practical business setup, administration and support.', true, 2, CURRENT_TIMESTAMP);
++
++INSERT INTO "Service" ("id", "name", "slug", "shortDescription", "description", "icon", "status", "isVisible", "featured", "requiresQuote", "acceptsApplications", "sortOrder", "categoryId", "updatedAt") VALUES
++('svc_it_support', 'IT Support', 'it-support', 'Practical technical assistance for workstations, software, user accounts and everyday technology challenges.', 'Practical technical assistance for workstations, software, user accounts and everyday technology challenges.', 'Headphones', 'PUBLISHED', true, true, true, false, 1, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_computer_repairs', 'Computer Repairs', 'computer-repairs', 'Troubleshooting, diagnosis, maintenance and repair support for desktop computers and related equipment.', 'Troubleshooting, diagnosis, maintenance and repair support for desktop computers and related equipment.', 'Wrench', 'PUBLISHED', true, false, true, false, 2, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_laptop_repairs', 'Laptop Repairs', 'laptop-repairs', 'Support for laptop faults, performance issues, upgrades and hardware-related problems.', 'Support for laptop faults, performance issues, upgrades and hardware-related problems.', 'Laptop', 'PUBLISHED', true, false, true, false, 3, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_phone_repairs', 'Phone Repairs', 'phone-repairs', 'Device assessment and repair coordination for common smartphone faults and damage.', 'Device assessment and repair coordination for common smartphone faults and damage.', 'Smartphone', 'PUBLISHED', true, false, true, false, 4, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_hardware_software', 'Hardware & Software Installation', 'hardware-software-installation', 'Installation, configuration and setup of business and personal hardware and software.', 'Installation, configuration and setup of business and personal hardware and software.', 'MonitorCog', 'PUBLISHED', true, false, true, false, 5, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_networking', 'Networking & Connectivity', 'networking-connectivity', 'Network setup, connectivity troubleshooting and practical support for connected environments.', 'Network setup, connectivity troubleshooting and practical support for connected environments.', 'Network', 'PUBLISHED', true, false, true, false, 6, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_website_development', 'Website Development', 'website-development', 'Responsive websites that communicate your offering and give customers a clear way to engage.', 'Responsive websites that communicate your offering and give customers a clear way to engage.', 'Globe2', 'PUBLISHED', true, true, true, false, 7, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_ecommerce', 'Ecommerce Development', 'ecommerce-development', 'Online store experiences designed around your products, customers and operating needs.', 'Online store experiences designed around your products, customers and operating needs.', 'Code2', 'PUBLISHED', true, false, true, false, 8, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_custom_software', 'Custom Software Development', 'custom-software-development', 'Purpose-built applications and digital tools for specific business processes.', 'Purpose-built applications and digital tools for specific business processes.', 'Code2', 'PUBLISHED', true, false, true, false, 9, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_business_systems', 'Business Management Systems', 'business-management-systems', 'Systems that help organise information, workflows and day-to-day business operations.', 'Systems that help organise information, workflows and day-to-day business operations.', 'Workflow', 'PUBLISHED', true, false, true, false, 10, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_domain_hosting', 'Domain Registration & Hosting', 'domain-hosting', 'Guidance with domain names, hosting arrangements and getting your online presence set up.', 'Guidance with domain names, hosting arrangements and getting your online presence set up.', 'Globe2', 'PUBLISHED', true, false, true, false, 11, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_professional_email', 'Professional Email Setup', 'professional-email', 'Business email setup using your domain and the tools your team already works with.', 'Business email setup using your domain and the tools your team already works with.', 'Mail', 'PUBLISHED', true, false, true, false, 12, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_microsoft_365', 'Microsoft 365 Setup', 'microsoft-365', 'Setup assistance for Microsoft 365 accounts, collaboration tools and productivity services.', 'Setup assistance for Microsoft 365 accounts, collaboration tools and productivity services.', 'MonitorCog', 'PUBLISHED', true, false, true, false, 13, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_google_workspace', 'Google Workspace Setup', 'google-workspace', 'Configuration guidance for business email, collaboration and Google Workspace tools.', 'Configuration guidance for business email, collaboration and Google Workspace tools.', 'Users', 'PUBLISHED', true, false, true, false, 14, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_database_api', 'Database & API Development', 'database-api-development', 'Structured data solutions and integrations that help applications exchange information.', 'Structured data solutions and integrations that help applications exchange information.', 'Database', 'PUBLISHED', true, false, true, false, 15, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_it_consulting', 'IT Consulting & Procurement', 'it-consulting-procurement', 'Practical technology guidance to help assess requirements and make informed purchasing decisions.', 'Practical technology guidance to help assess requirements and make informed purchasing decisions.', 'BadgeHelp', 'PUBLISHED', true, false, true, false, 16, 'svc_cat_technology', CURRENT_TIMESTAMP),
++('svc_business_registration', 'Business Registration Assistance', 'business-registration-assistance', 'Guidance through the information and administrative steps involved in establishing a business.', 'Guidance through the information and administrative steps involved in establishing a business.', 'Building2', 'PUBLISHED', true, false, true, true, 1, 'svc_cat_business', CURRENT_TIMESTAMP),
++('svc_business_startup', 'Business Startup Assistance', 'business-startup-assistance', 'Practical support to help organise early business requirements and plan the next steps.', 'Practical support to help organise early business requirements and plan the next steps.', 'BriefcaseBusiness', 'PUBLISHED', true, false, true, false, 2, 'svc_cat_business', CURRENT_TIMESTAMP),
++('svc_business_docs', 'Business Documentation', 'business-documentation', 'Help preparing and organising business documents for day-to-day operations.', 'Help preparing and organising business documents for day-to-day operations.', 'FileText', 'PUBLISHED', true, false, true, false, 3, 'svc_cat_business', CURRENT_TIMESTAMP),
++('svc_company_profiles', 'Company Profiles', 'company-profiles', 'Clear, professional company profiles that introduce your business, services and capabilities.', 'Clear, professional company profiles that introduce your business, services and capabilities.', 'ClipboardList', 'PUBLISHED', true, false, true, false, 4, 'svc_cat_business', CURRENT_TIMESTAMP),
++('svc_business_admin', 'Business Administration Support', 'business-administration-support', 'Administrative assistance to help keep business information and routine processes organised.', 'Administrative assistance to help keep business information and routine processes organised.', 'Users', 'PUBLISHED', true, false, true, false, 5, 'svc_cat_business', CURRENT_TIMESTAMP),
++('svc_business_consulting', 'Business Consulting', 'business-consulting', 'A structured conversation about your business needs, challenges and possible next steps.', 'A structured conversation about your business needs, challenges and possible next steps.', 'BadgeHelp', 'PUBLISHED', true, false, true, false, 6, 'svc_cat_business', CURRENT_TIMESTAMP),
++('svc_business_support', 'Business Support', 'business-support', 'Flexible support for practical business tasks, planning and operational requirements.', 'Flexible support for practical business tasks, planning and operational requirements.', 'Workflow', 'PUBLISHED', true, false, true, false, 7, 'svc_cat_business', CURRENT_TIMESTAMP),
++('svc_micro_loans', 'Micro Loan Enquiries', 'micro-loan-enquiries', 'An enquiry pathway for people interested in exploring potential financing options, subject to eligibility and assessment.', 'An enquiry pathway for people interested in exploring potential financing options, subject to eligibility and assessment.', 'ShieldCheck', 'PUBLISHED', true, false, true, true, 8, 'svc_cat_business', CURRENT_TIMESTAMP),
++('svc_graphic_design', 'Graphic Design & Branding', 'graphic-design-branding', 'Visual identity and communication materials that help present your business consistently.', 'Visual identity and communication materials that help present your business consistently.', 'Palette', 'PUBLISHED', true, false, true, false, 9, 'svc_cat_business', CURRENT_TIMESTAMP),
++('svc_business_automation', 'Business Automation', 'business-automation', 'Identify repeatable tasks and explore digital workflows that can reduce manual effort.', 'Identify repeatable tasks and explore digital workflows that can reduce manual effort.', 'Workflow', 'PUBLISHED', true, false, true, false, 10, 'svc_cat_business', CURRENT_TIMESTAMP);
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 62a8c36..39424d0 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -13,6 +13,12 @@ enum UserRole {
+   STAFF
+ }
+ 
++enum ServiceStatus {
++  DRAFT
++  PUBLISHED
++  ARCHIVED
++}
++
+ enum ProductStatus {
+   DRAFT
+   PUBLISHED
+@@ -93,6 +99,47 @@ model Category {
+   updatedAt DateTime @updatedAt
+ }
+ 
++model ServiceCategory {
++  id String @id @default(cuid())
++  name String @unique
++  slug String @unique
++  description String?
++  active Boolean @default(true)
++  sortOrder Int @default(0)
++  services Service[]
++  createdAt DateTime @default(now())
++  updatedAt DateTime @updatedAt
++  @@index([active, sortOrder])
++}
++
++model Service {
++  id String @id @default(cuid())
++  name String
++  slug String @unique
++  shortDescription String
++  description String
++  icon String @default("BriefcaseBusiness")
++  heroImageUrl String?
++  status ServiceStatus @default(DRAFT)
++  isVisible Boolean @default(false)
++  featured Boolean @default(false)
++  requiresQuote Boolean @default(true)
++  acceptsApplications Boolean @default(false)
++  startingPrice Decimal? @db.Decimal(12,2)
++  priceLabel String?
++  sortOrder Int @default(0)
++  seoTitle String?
++  seoDescription String?
++  categoryId String
++  category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
++  createdAt DateTime @default(now())
++  updatedAt DateTime @updatedAt
++  deletedAt DateTime?
++  @@index([status, isVisible, categoryId])
++  @@index([featured, sortOrder])
++  @@index([name])
++}
++
+ model Product {
+   id String @id @default(cuid())
+   name String
+diff --git a/scripts/create-admin.mjs b/scripts/create-admin.mjs
+new file mode 100644
+index 0000000..c11f3b4
+--- /dev/null
++++ b/scripts/create-admin.mjs
+@@ -0,0 +1,33 @@
++import { PrismaClient } from "@prisma/client";
++import bcrypt from "bcryptjs";
++
++const prisma = new PrismaClient();
++
++try {
++  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
++  const password = process.env.ADMIN_PASSWORD;
++  const name = process.env.ADMIN_NAME?.trim() || "Arkyl Administrator";
++
++  if (!email || !password) {
++    throw new Error("Set ADMIN_EMAIL and ADMIN_PASSWORD in your .env file first.");
++  }
++  if (password.length < 12) {
++    throw new Error("ADMIN_PASSWORD must contain at least 12 characters.");
++  }
++
++  const existing = await prisma.adminUser.findUnique({ where: { email } });
++  if (existing) {
++    console.log(`An administrator account already exists for ${email}. No changes were made.`);
++  } else {
++    const passwordHash = await bcrypt.hash(password, 12);
++    await prisma.adminUser.create({
++      data: { name, email, passwordHash, role: "SUPER_ADMIN", active: true },
++    });
++    console.log(`Super administrator created for ${email}. Remove ADMIN_PASSWORD from .env after this step.`);
++  }
++} catch (error) {
++  console.error(error instanceof Error ? error.message : "Administrator bootstrap failed.");
++  process.exitCode = 1;
++} finally {
++  await prisma.$disconnect();
++}
+diff --git a/src/app/(site)/business-services/page.tsx b/src/app/(site)/business-services/page.tsx
+index 8ab2eab..50e8b8e 100644
+--- a/src/app/(site)/business-services/page.tsx
++++ b/src/app/(site)/business-services/page.tsx
+@@ -1,18 +1,25 @@
+-import Link from "next/link";
+-import { ArrowUpRight } from "lucide-react";
+-import { PageHero } from "@/components/site/page-hero";
+-import { ContentCard } from "@/components/site/content-card";
+-import { businessServices } from "@/data/public-content";
+-
+-export const metadata = { title: "Business Services | Arkyl Ventures", description: "Explore business startup assistance, documentation, company profiles and business support." };
+-
+-export default function BusinessServicesPage() {
+-  return <>
+-    <PageHero eyebrow="BUSINESS SERVICES" title="Build a stronger" accent="business foundation." description="Starting and running a business involves many moving parts. Explore practical support with business setup, documentation, administration, consulting and digital workflows." primaryLabel="Discuss your business needs" primaryHref="/contact" secondaryLabel="Explore technology" secondaryHref="/technology-it" />
+-    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">WAYS WE CAN SUPPORT YOU</span><h2>Make the next business step <span>clearer.</span></h2><p>Choose an area to learn more. Service scope and availability are confirmed during your enquiry.</p></div>
+-      <div className="content-card-grid">{businessServices.map((service, index) => <ContentCard key={service.slug} number={String(index + 1).padStart(2, "0")} icon={service.icon} title={service.title} description={service.description} href={`/services/${service.slug}`} />)}</div>
+-      <p className="compliance-note">Business registration assistance is administrative support and does not replace official CIPC processes or guarantee registration or approval. Financing enquiries are not loan approvals; eligibility, affordability and any applicable regulatory requirements must be assessed by the relevant provider.</p>
+-    </section>
+-    <section className="page-callout section-container"><div><span className="section-kicker">LET&apos;S TALK BUSINESS</span><h2>Start with a <span>conversation.</span></h2><p>Tell us where you are in your business journey and what kind of support you are looking for.</p></div><Link className="button button-primary" href="/contact">Make an enquiry <ArrowUpRight size={17} /></Link></section>
+-  </>;
+-}
++import Link from "next/link";
++import { ArrowUpRight } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { ContentCard } from "@/components/site/content-card";
++import { getServiceIcon } from "@/components/site/service-icon";
++import { prisma } from "@/lib/prisma";
++
++export const dynamic = "force-dynamic";
++export const metadata = { title: "Business Services | Arkyl Ventures", description: "Explore business startup assistance, documentation, company profiles and business support." };
++
++export default async function BusinessServicesPage() {
++  const category = await prisma.serviceCategory.findFirst({
++    where: { slug: "business-services", active: true },
++    include: { services: { where: { status: "PUBLISHED", isVisible: true, deletedAt: null }, orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { name: "asc" }] } },
++  });
++  const services = category?.services ?? [];
++  return <>
++    <PageHero eyebrow="BUSINESS SERVICES" title="Build a stronger" accent="business foundation." description="Starting and running a business involves many moving parts. Explore practical support with business setup, documentation, administration, consulting and digital workflows." primaryLabel="Discuss your business needs" primaryHref="/contact" secondaryLabel="Explore technology" secondaryHref="/technology-it" />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">WAYS WE CAN SUPPORT YOU</span><h2>Make the next business step <span>clearer.</span></h2><p>Choose an area to learn more. Service scope and availability are confirmed during your enquiry.</p></div>
++      {services.length ? <div className="content-card-grid">{services.map((service, index) => <ContentCard key={service.id} number={String(index + 1).padStart(2, "0")} icon={getServiceIcon(service.icon)} title={service.name} description={service.shortDescription} href={`/services/${service.slug}`} />)}</div> : <div className="service-empty-state"><h3>Business services are being updated.</h3><p>Please contact us to discuss the support you need.</p><Link className="button button-primary" href="/contact">Contact Arkyl Ventures <ArrowUpRight size={16} /></Link></div>}
++      <p className="compliance-note">Business registration assistance is administrative support and does not replace official CIPC processes or guarantee registration or approval. Financing enquiries are not loan approvals; eligibility, affordability and any applicable regulatory requirements must be assessed by the relevant provider.</p>
++    </section>
++    <section className="page-callout section-container"><div><span className="section-kicker">LET&apos;S TALK BUSINESS</span><h2>Start with a <span>conversation.</span></h2><p>Tell us where you are in your business journey and what kind of support you are looking for.</p></div><Link className="button button-primary" href="/contact">Make an enquiry <ArrowUpRight size={17} /></Link></section>
++  </>;
++}
+diff --git a/src/app/(site)/page.tsx b/src/app/(site)/page.tsx
+index 82b3b30..425b69e 100644
+--- a/src/app/(site)/page.tsx
++++ b/src/app/(site)/page.tsx
+@@ -1,109 +1,109 @@
+-import Image from "next/image";
+-import Link from "next/link";
+-import { ArrowRight, ArrowUpRight, CheckCircle2, Code2, Cpu, Headphones, MonitorSmartphone, ShoppingBag, Sparkles, BriefcaseBusiness, Network, ShieldCheck } from "lucide-react";
+-
+-const technologyServices = [
+-  { icon: Headphones, title: "IT support", text: "Reliable technical assistance for everyday business and personal technology." },
+-  { icon: MonitorSmartphone, title: "Repairs & installations", text: "Computer, laptop and phone repairs, setup, upgrades and software installation." },
+-  { icon: Code2, title: "Websites & software", text: "Professional websites, ecommerce stores and software built around your needs." },
+-  { icon: Network, title: "Networking & cloud", text: "Connectivity, Microsoft 365, Google Workspace, hosting and business email." },
+-];
+-
+-const businessServices = [
+-  "Business registration assistance",
+-  "Business plans and company profiles",
+-  "Business documentation and administration",
+-  "Business support and consultations",
+-];
+-
+-const benefits = [
+-  "Solutions shaped around your requirements",
+-  "Clear communication from enquiry to delivery",
+-  "Practical support for individuals and businesses",
+-];
+-
+-export default function HomePage() {
+-  return (
+-    <>
+-      <section className="hero-section section-container" aria-labelledby="hero-title">
+-        <div className="hero-copy">
+-          <div className="eyebrow"><span className="eyebrow-line" /> TECHNOLOGY. BUSINESS. POSSIBILITIES.</div>
+-          <h1 id="hero-title">Move your ideas <span>forward.</span></h1>
+-          <p className="hero-description">Technology and business solutions designed to help you work smarter, grow confidently and make more possible.</p>
+-          <div className="hero-actions">
+-            <Link className="button button-primary" href="/contact">Let&apos;s get started <ArrowUpRight size={17} /></Link>
+-            <Link className="button button-quiet" href="/about">Discover Arkyl <ArrowRight size={16} /></Link>
+-          </div>
+-          <div className="hero-proof"><span className="proof-dot" /> Practical solutions. Thoughtful service. Room to grow.</div>
+-        </div>
+-
+-        <div className="hero-visual" aria-label="Arkyl Ventures human-inspired technology illustration">
+-          <div className="hero-orbit hero-orbit-one" />
+-          <div className="hero-orbit hero-orbit-two" />
+-          <div className="hero-image-wrap">
+-            <Image src="/images/arkyl.png" alt="A futuristic human-shaped robot representing technology and innovation" fill priority sizes="(max-width: 900px) 80vw, 560px" className="hero-robot" />
+-          </div>
+-          <div className="hero-glass-card glass-card glass-card-top">
+-            <span className="glass-icon"><Cpu size={17} /></span>
+-            <span><strong>Technology that works</strong><small>Built around real needs</small></span>
+-          </div>
+-          <div className="hero-glass-card glass-card glass-card-bottom">
+-            <span className="glass-icon"><Sparkles size={17} /></span>
+-            <span><strong>Possibilities, unlocked</strong><small>From ideas to outcomes</small></span>
+-          </div>
+-          <div className="hero-side-note">WHERE POSSIBILITIES BEGIN</div>
+-        </div>
+-
+-        <div className="hero-bottom-note"><span>01 / 04</span><span>Technology & business solutions</span><span className="hero-bottom-rule" /></div>
+-      </section>
+-
+-      <section className="intro-strip section-container" aria-label="Company introduction">
+-        <p>One partner for <strong>technology, business support</strong> and the tools that help you move forward.</p>
+-        <Link href="/about" className="text-link">Get to know us <ArrowUpRight size={16} /></Link>
+-      </section>
+-
+-      <section className="content-section section-container" id="technology" aria-labelledby="technology-title">
+-        <div className="section-heading-row">
+-          <div><span className="section-kicker">01 / TECHNOLOGY & IT</span><h2 id="technology-title">Make technology <span>work for you.</span></h2></div>
+-          <p>From everyday technical support to custom digital products, we help you get more from the technology you rely on.</p>
+-        </div>
+-        <div className="service-grid">
+-          {technologyServices.map((service) => {
+-            const Icon = service.icon;
+-            return <article className="service-card" key={service.title}><span className="service-icon"><Icon size={21} /></span><h3>{service.title}</h3><p>{service.text}</p><Link href="/technology-it" aria-label={`Explore ${service.title}`}><ArrowUpRight size={17} /></Link></article>;
+-          })}
+-        </div>
+-        <div className="section-link-row"><span>Technology solutions for home and business</span><Link className="text-link" href="/technology-it">Explore Technology & IT <ArrowUpRight size={16} /></Link></div>
+-      </section>
+-
+-      <section className="business-section" id="business-services" aria-labelledby="business-title">
+-        <div className="business-inner section-container">
+-          <div className="business-copy"><span className="section-kicker">02 / BUSINESS SERVICES</span><h2 id="business-title">Build a stronger <span>business foundation.</span></h2><p>Getting a business off the ground or keeping it moving takes time, structure and the right support. We help make those next steps clearer.</p><Link className="button button-outline" href="/business-services">Explore business services <ArrowUpRight size={17} /></Link></div>
+-          <div className="business-list-card glass-card"><div className="business-list-heading"><BriefcaseBusiness size={19} /><span>Ways we can support you</span></div>{businessServices.map((service) => <div className="business-list-item" key={service}><CheckCircle2 size={17} /><span>{service}</span><ArrowUpRight size={15} /></div>)}<p className="business-disclaimer">Service availability and scope are confirmed during your enquiry. Official registrations and approvals remain subject to the relevant authorities.</p></div>
+-        </div>
+-      </section>
+-
+-      <section className="content-section section-container" id="shop" aria-labelledby="shop-title">
+-        <div className="section-heading-row"><div><span className="section-kicker">03 / THE ARKYL SHOP</span><h2 id="shop-title">Useful products. <span>Considered choices.</span></h2></div><p>Explore technology and everyday products selected to support how you work and live. Our catalogue will grow as new categories become available.</p></div>
+-        <div className="shop-feature-card"><div className="shop-feature-icon"><ShoppingBag size={28} /></div><div><span className="shop-label">COMING INTO FOCUS</span><h3>A smarter way to shop for the things you need.</h3><p>Browse product categories, compare options and find the right fit as our online store expands.</p></div><Link className="button button-primary" href="/shop">Explore the shop <ArrowUpRight size={17} /></Link></div>
+-      </section>
+-
+-      <section className="why-section section-container" aria-labelledby="why-title">
+-        <div className="why-heading"><span className="section-kicker">04 / THE ARKYL APPROACH</span><h2 id="why-title">Good work starts with <span>understanding.</span></h2><p>We believe useful solutions begin by listening, understanding the challenge and choosing a practical way forward.</p></div>
+-        <div className="why-points">{benefits.map((benefit, index) => <div className="why-point" key={benefit}><span>0{index + 1}</span><p>{benefit}</p><ShieldCheck size={18} /></div>)}</div>
+-      </section>
+-
+-      <section className="about-preview section-container" id="about" aria-labelledby="about-title">
+-        <div className="about-preview-mark"><span>AV</span><i>ARKYL VENTURES</i></div>
+-        <div className="about-preview-copy"><span className="section-kicker">ABOUT ARKYL VENTURES</span><h2 id="about-title">A practical partner for <span>what comes next.</span></h2><p>Arkyl Ventures brings technology and business support together under one roof. Our focus is to understand what you need, make the options clear and help you take the next step with confidence.</p><Link className="text-link" href="/contact">Talk to our team <ArrowUpRight size={16} /></Link></div>
+-      </section>
+-
+-      <section className="portfolio-preview section-container" id="portfolio" aria-labelledby="portfolio-title">
+-        <div><span className="section-kicker">OUR WORK</span><h2 id="portfolio-title">Built around real <span>business needs.</span></h2><p>As projects are completed, this space will showcase selected websites, digital products and business solutions delivered by Arkyl Ventures.</p></div>
+-        <div className="portfolio-preview-note"><span className="portfolio-preview-number">01</span><div><strong>Project portfolio</strong><small>Selected work and case studies will be published here.</small></div><Sparkles size={20} /></div>
+-      </section>
+-
+-      <section className="contact-band section-container" id="contact"><div><span className="section-kicker">HAVE SOMETHING IN MIND?</span><h2>Let&apos;s make the next step <span>possible.</span></h2><p>Tell us what you are working on. We&apos;ll help you explore the right way forward.</p></div><Link className="button button-primary" href="/contact">Start a conversation <ArrowUpRight size={17} /></Link></section>
+-    </>
+-  );
+-}
++import Image from "next/image";
++import Link from "next/link";
++import { ArrowRight, ArrowUpRight, CheckCircle2, Cpu, ShoppingBag, Sparkles, BriefcaseBusiness, ShieldCheck } from "lucide-react";
++import { prisma } from "@/lib/prisma";
++import { ServiceIcon } from "@/components/site/service-icon";
++
++const benefits = [
++  "Solutions shaped around your requirements",
++  "Clear communication from enquiry to delivery",
++  "Practical support for individuals and businesses",
++];
++
++export const dynamic = "force-dynamic";
++
++export default async function HomePage() {
++  const [technologyServices, businessServices] = await Promise.all([
++    prisma.service.findMany({
++      where: { status: "PUBLISHED", isVisible: true, deletedAt: null, category: { slug: "technology-it", active: true } },
++      orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
++      take: 4,
++    }),
++    prisma.service.findMany({
++      where: { status: "PUBLISHED", isVisible: true, deletedAt: null, category: { slug: "business-services", active: true } },
++      orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
++      take: 4,
++    }),
++  ]);
++  return (
++    <>
++      <section className="hero-section section-container" aria-labelledby="hero-title">
++        <div className="hero-copy">
++          <div className="eyebrow"><span className="eyebrow-line" /> TECHNOLOGY. BUSINESS. POSSIBILITIES.</div>
++          <h1 id="hero-title">Move your ideas <span>forward.</span></h1>
++          <p className="hero-description">Technology and business solutions designed to help you work smarter, grow confidently and make more possible.</p>
++          <div className="hero-actions">
++            <Link className="button button-primary" href="/contact">Let&apos;s get started <ArrowUpRight size={17} /></Link>
++            <Link className="button button-quiet" href="/about">Discover Arkyl <ArrowRight size={16} /></Link>
++          </div>
++          <div className="hero-proof"><span className="proof-dot" /> Practical solutions. Thoughtful service. Room to grow.</div>
++        </div>
++
++        <div className="hero-visual" aria-label="Arkyl Ventures human-inspired technology illustration">
++          <div className="hero-orbit hero-orbit-one" />
++          <div className="hero-orbit hero-orbit-two" />
++          <div className="hero-image-wrap">
++            <Image src="/images/arkyl.png" alt="A futuristic human-shaped robot representing technology and innovation" fill priority sizes="(max-width: 900px) 80vw, 560px" className="hero-robot" />
++          </div>
++          <div className="hero-glass-card glass-card glass-card-top">
++            <span className="glass-icon"><Cpu size={17} /></span>
++            <span><strong>Technology that works</strong><small>Built around real needs</small></span>
++          </div>
++          <div className="hero-glass-card glass-card glass-card-bottom">
++            <span className="glass-icon"><Sparkles size={17} /></span>
++            <span><strong>Possibilities, unlocked</strong><small>From ideas to outcomes</small></span>
++          </div>
++          <div className="hero-side-note">WHERE POSSIBILITIES BEGIN</div>
++        </div>
++
++        <div className="hero-bottom-note"><span>01 / 04</span><span>Technology & business solutions</span><span className="hero-bottom-rule" /></div>
++      </section>
++
++      <section className="intro-strip section-container" aria-label="Company introduction">
++        <p>One partner for <strong>technology, business support</strong> and the tools that help you move forward.</p>
++        <Link href="/about" className="text-link">Get to know us <ArrowUpRight size={16} /></Link>
++      </section>
++
++      <section className="content-section section-container" id="technology" aria-labelledby="technology-title">
++        <div className="section-heading-row">
++          <div><span className="section-kicker">01 / TECHNOLOGY & IT</span><h2 id="technology-title">Make technology <span>work for you.</span></h2></div>
++          <p>From everyday technical support to custom digital products, we help you get more from the technology you rely on.</p>
++        </div>
++        <div className="service-grid">
++          {technologyServices.map((service) => <article className="service-card" key={service.id}><span className="service-icon"><ServiceIcon name={service.icon} size={21} /></span><h3>{service.name}</h3><p>{service.shortDescription}</p><Link href={`/services/${service.slug}`} aria-label={`Explore ${service.name}`}><ArrowUpRight size={17} /></Link></article>)}
++          {technologyServices.length === 0 ? <p className="service-empty-state">Technology services will be listed here as they become available.</p> : null}
++        </div>
++        <div className="section-link-row"><span>Technology solutions for home and business</span><Link className="text-link" href="/technology-it">Explore Technology & IT <ArrowUpRight size={16} /></Link></div>
++      </section>
++
++      <section className="business-section" id="business-services" aria-labelledby="business-title">
++        <div className="business-inner section-container">
++          <div className="business-copy"><span className="section-kicker">02 / BUSINESS SERVICES</span><h2 id="business-title">Build a stronger <span>business foundation.</span></h2><p>Getting a business off the ground or keeping it moving takes time, structure and the right support. We help make those next steps clearer.</p><Link className="button button-outline" href="/business-services">Explore business services <ArrowUpRight size={17} /></Link></div>
++          <div className="business-list-card glass-card"><div className="business-list-heading"><BriefcaseBusiness size={19} /><span>Ways we can support you</span></div>{businessServices.map((service) => <Link className="business-list-item" key={service.id} href={`/services/${service.slug}`}><CheckCircle2 size={17} /><span>{service.name}</span><ArrowUpRight size={15} /></Link>)}{businessServices.length === 0 ? <p className="business-disclaimer">Business services will be listed here as they become available.</p> : null}<p className="business-disclaimer">Service availability and scope are confirmed during your enquiry. Official registrations and approvals remain subject to the relevant authorities.</p></div>
++        </div>
++      </section>
++
++      <section className="content-section section-container" id="shop" aria-labelledby="shop-title">
++        <div className="section-heading-row"><div><span className="section-kicker">03 / THE ARKYL SHOP</span><h2 id="shop-title">Useful products. <span>Considered choices.</span></h2></div><p>Explore technology and everyday products selected to support how you work and live. Our catalogue will grow as new categories become available.</p></div>
++        <div className="shop-feature-card"><div className="shop-feature-icon"><ShoppingBag size={28} /></div><div><span className="shop-label">COMING INTO FOCUS</span><h3>A smarter way to shop for the things you need.</h3><p>Browse product categories, compare options and find the right fit as our online store expands.</p></div><Link className="button button-primary" href="/shop">Explore the shop <ArrowUpRight size={17} /></Link></div>
++      </section>
++
++      <section className="why-section section-container" aria-labelledby="why-title">
++        <div className="why-heading"><span className="section-kicker">04 / THE ARKYL APPROACH</span><h2 id="why-title">Good work starts with <span>understanding.</span></h2><p>We believe useful solutions begin by listening, understanding the challenge and choosing a practical way forward.</p></div>
++        <div className="why-points">{benefits.map((benefit, index) => <div className="why-point" key={benefit}><span>0{index + 1}</span><p>{benefit}</p><ShieldCheck size={18} /></div>)}</div>
++      </section>
++
++      <section className="about-preview section-container" id="about" aria-labelledby="about-title">
++        <div className="about-preview-mark"><span>AV</span><i>ARKYL VENTURES</i></div>
++        <div className="about-preview-copy"><span className="section-kicker">ABOUT ARKYL VENTURES</span><h2 id="about-title">A practical partner for <span>what comes next.</span></h2><p>Arkyl Ventures brings technology and business support together under one roof. Our focus is to understand what you need, make the options clear and help you take the next step with confidence.</p><Link className="text-link" href="/contact">Talk to our team <ArrowUpRight size={16} /></Link></div>
++      </section>
++
++      <section className="portfolio-preview section-container" id="portfolio" aria-labelledby="portfolio-title">
++        <div><span className="section-kicker">OUR WORK</span><h2 id="portfolio-title">Built around real <span>business needs.</span></h2><p>As projects are completed, this space will showcase selected websites, digital products and business solutions delivered by Arkyl Ventures.</p></div>
++        <div className="portfolio-preview-note"><span className="portfolio-preview-number">01</span><div><strong>Project portfolio</strong><small>Selected work and case studies will be published here.</small></div><Sparkles size={20} /></div>
++      </section>
++
++      <section className="contact-band section-container" id="contact"><div><span className="section-kicker">HAVE SOMETHING IN MIND?</span><h2>Let&apos;s make the next step <span>possible.</span></h2><p>Tell us what you are working on. We&apos;ll help you explore the right way forward.</p></div><Link className="button button-primary" href="/contact">Start a conversation <ArrowUpRight size={17} /></Link></section>
++    </>
++  );
++}
+diff --git a/src/app/(site)/services/[slug]/page.tsx b/src/app/(site)/services/[slug]/page.tsx
+index b1195ca..bc43a0c 100644
+--- a/src/app/(site)/services/[slug]/page.tsx
++++ b/src/app/(site)/services/[slug]/page.tsx
+@@ -1,24 +1,46 @@
+-import { notFound } from "next/navigation";
+-import Link from "next/link";
+-import { ArrowLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
+-import { PageHero } from "@/components/site/page-hero";
+-import { technologyServices, businessServices } from "@/data/public-content";
+-
+-const allServices = [...technologyServices, ...businessServices];
+-
+-export function generateStaticParams() { return allServices.map((service) => ({ slug: service.slug })); }
+-
+-export default async function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+-  const { slug } = await params;
+-  const service = allServices.find((item) => item.slug === slug);
+-  if (!service) notFound();
+-  const isTechnology = technologyServices.some((item) => item.slug === slug);
+-  const parentHref = isTechnology ? "/technology-it" : "/business-services";
+-  const parentLabel = isTechnology ? "Technology & IT" : "Business Services";
+-  return <>
+-    <PageHero eyebrow={parentLabel.toUpperCase()} title={service.title} accent="made practical." description={service.description} primaryLabel="Enquire about this service" primaryHref="/contact" secondaryLabel={`Back to ${parentLabel}`} secondaryHref={parentHref} />
+-    <section className="page-section section-container service-detail-layout"><div><span className="section-kicker">HOW WE APPROACH IT</span><h2>Start with your <span>requirements.</span></h2><p className="service-detail-intro">Every situation is different. We begin by understanding what you need, the environment you are working in and the outcome you want to achieve. From there, we can discuss the appropriate scope, timing and next steps.</p><div className="service-detail-points"><div><CheckCircle2 size={18} /><span>Understand the requirement and current situation.</span></div><div><CheckCircle2 size={18} /><span>Discuss practical options and expected scope.</span></div><div><CheckCircle2 size={18} /><span>Confirm availability and any quotation before work begins.</span></div></div></div>
+-      <aside className="service-detail-aside glass-card"><span className="section-kicker">NEXT STEP</span><h3>Let&apos;s understand what you need.</h3><p>Send an enquiry with a little context. We can then confirm whether the service is suitable and discuss the way forward.</p><Link className="button button-primary" href="/contact">Make an enquiry <ArrowUpRight size={17} /></Link><Link className="service-back-link" href={parentHref}><ArrowLeft size={15} /> Browse {parentLabel}</Link></aside></section>
+-    <section className="service-disclaimer section-container"><p>Service availability, scope, pricing and delivery timeframes are confirmed individually. No outcome is guaranteed until requirements have been reviewed and agreed.</p></section>
+-  </>;
+-}
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import Link from "next/link";
++import Image from "next/image";
++import { ArrowLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { prisma } from "@/lib/prisma";
++
++export const dynamic = "force-dynamic";
++
++type ServiceParams = { params: Promise<{ slug: string }> };
++
++async function findPublicService(slug: string) {
++  return prisma.service.findFirst({
++    where: { slug, status: "PUBLISHED", isVisible: true, deletedAt: null, category: { active: true } },
++    include: { category: true },
++  });
++}
++
++export async function generateMetadata({ params }: ServiceParams): Promise<Metadata> {
++  const { slug } = await params;
++  const service = await findPublicService(slug);
++  if (!service) return { title: "Service not found | Arkyl Ventures" };
++  return {
++    title: service.seoTitle || `${service.name} | Arkyl Ventures`,
++    description: service.seoDescription || service.shortDescription,
++  };
++}
++
++export default async function ServiceDetailPage({ params }: ServiceParams) {
++  const { slug } = await params;
++  const service = await findPublicService(slug);
++  if (!service) notFound();
++  const parentHref = service.category.slug === "technology-it"
++    ? "/technology-it"
++    : service.category.slug === "business-services"
++      ? "/business-services"
++      : `/services/category/${service.category.slug}`;
++  const parentLabel = service.category.name;
++  return <>
++    <PageHero eyebrow={parentLabel.toUpperCase()} title={service.name} accent="made practical." description={service.shortDescription} primaryLabel="Enquire about this service" primaryHref="/contact" secondaryLabel={`Back to ${parentLabel}`} secondaryHref={parentHref} />
++    <section className="page-section section-container service-detail-layout"><div>{service.heroImageUrl ? <div className="service-detail-image"><Image src={service.heroImageUrl} alt={`${service.name} service`} width={900} height={520} unoptimized /></div> : null}<span className="section-kicker">HOW WE APPROACH IT</span><h2>Start with your <span>requirements.</span></h2><p className="service-detail-intro">{service.description}</p><div className="service-detail-points"><div><CheckCircle2 size={18} /><span>Understand the requirement and current situation.</span></div><div><CheckCircle2 size={18} /><span>Discuss practical options and expected scope.</span></div><div><CheckCircle2 size={18} /><span>Confirm availability and any quotation before work begins.</span></div></div></div>
++      <aside className="service-detail-aside glass-card"><span className="section-kicker">NEXT STEP</span><h3>Let&apos;s understand what you need.</h3><p>Send an enquiry with a little context. We can then confirm whether the service is suitable and discuss the way forward.</p>{service.priceLabel || service.startingPrice ? <p className="service-price-note">{service.priceLabel || `Starting from R${service.startingPrice?.toString()}`}</p> : null}<Link className="button button-primary" href="/contact">Make an enquiry <ArrowUpRight size={17} /></Link><Link className="service-back-link" href={parentHref}><ArrowLeft size={15} /> Browse {parentLabel}</Link></aside></section>
++    <section className="service-disclaimer section-container"><p>Service availability, scope, pricing and delivery timeframes are confirmed individually. No outcome is guaranteed until requirements have been reviewed and agreed.</p></section>
++  </>;
++}
+diff --git a/src/app/(site)/services/category/[slug]/page.tsx b/src/app/(site)/services/category/[slug]/page.tsx
+new file mode 100644
+index 0000000..be498d9
+--- /dev/null
++++ b/src/app/(site)/services/category/[slug]/page.tsx
+@@ -0,0 +1,34 @@
++import type { Metadata } from "next";
++import Link from "next/link";
++import { notFound } from "next/navigation";
++import { ArrowUpRight } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { ContentCard } from "@/components/site/content-card";
++import { getServiceIcon } from "@/components/site/service-icon";
++import { prisma } from "@/lib/prisma";
++
++type CategoryParams = { params: Promise<{ slug: string }> };
++export const dynamic = "force-dynamic";
++
++async function findPublicCategory(slug: string) {
++  return prisma.serviceCategory.findFirst({
++    where: { slug, active: true, services: { some: { status: "PUBLISHED", isVisible: true, deletedAt: null } } },
++    include: { services: { where: { status: "PUBLISHED", isVisible: true, deletedAt: null }, orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { name: "asc" }] } },
++  });
++}
++
++export async function generateMetadata({ params }: CategoryParams): Promise<Metadata> {
++  const { slug } = await params;
++  const category = await findPublicCategory(slug);
++  return category ? { title: `${category.name} | Arkyl Ventures`, description: category.description || `Explore ${category.name} services from Arkyl Ventures.` } : { title: "Service category not found | Arkyl Ventures" };
++}
++
++export default async function ServiceCategoryPage({ params }: CategoryParams) {
++  const { slug } = await params;
++  const category = await findPublicCategory(slug);
++  if (!category) notFound();
++  return <>
++    <PageHero eyebrow="SERVICE CATEGORY" title={category.name} accent="made practical." description={category.description || `Explore the ${category.name} services currently offered by Arkyl Ventures.`} primaryLabel="Discuss your requirements" primaryHref="/contact" secondaryLabel="All services" secondaryHref="/services" />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">AVAILABLE SERVICES</span><h2>Explore this <span>service category.</span></h2></div><div className="content-card-grid">{category.services.map((service, index) => <ContentCard key={service.id} number={String(index + 1).padStart(2, "0")} icon={getServiceIcon(service.icon)} title={service.name} description={service.shortDescription} href={`/services/${service.slug}`} />)}</div><p className="service-category-footer"><Link className="text-link" href="/services">Browse all service categories <ArrowUpRight size={15} /></Link></p></section>
++  </>;
++}
+diff --git a/src/app/(site)/services/page.tsx b/src/app/(site)/services/page.tsx
+new file mode 100644
+index 0000000..bde5cea
+--- /dev/null
++++ b/src/app/(site)/services/page.tsx
+@@ -0,0 +1,24 @@
++import Link from "next/link";
++import { ArrowUpRight } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { ContentCard } from "@/components/site/content-card";
++import { getServiceIcon } from "@/components/site/service-icon";
++import { prisma } from "@/lib/prisma";
++
++export const dynamic = "force-dynamic";
++export const metadata = { title: "Our Services | Arkyl Ventures", description: "Browse the services currently offered by Arkyl Ventures." };
++
++export default async function ServicesDirectoryPage() {
++  const categories = await prisma.serviceCategory.findMany({
++    where: { active: true, services: { some: { status: "PUBLISHED", isVisible: true, deletedAt: null } } },
++    include: { services: { where: { status: "PUBLISHED", isVisible: true, deletedAt: null }, orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { name: "asc" }] } },
++    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
++  });
++
++  return <>
++    <PageHero eyebrow="ARKYL SERVICE DIRECTORY" title="Practical support for" accent="what comes next." description="Explore the service areas currently offered by Arkyl Ventures. New categories and services can be introduced as the business grows." primaryLabel="Discuss your needs" primaryHref="/contact" secondaryLabel="About Arkyl" secondaryHref="/about" />
++    <section className="page-section section-container">
++      {categories.length ? categories.map((category) => <div className="service-directory-section" key={category.id}><div className="page-section-heading"><span className="section-kicker">SERVICE CATEGORY</span><h2>{category.name}</h2>{category.description ? <p>{category.description}</p> : null}<Link className="text-link" href={`/services/category/${category.slug}`}>View this category <ArrowUpRight size={15} /></Link></div><div className="content-card-grid">{category.services.slice(0, 6).map((service, index) => <ContentCard key={service.id} number={String(index + 1).padStart(2, "0")} icon={getServiceIcon(service.icon)} title={service.name} description={service.shortDescription} href={`/services/${service.slug}`} />)}</div></div>) : <div className="service-empty-state"><h3>Our service catalogue is being updated.</h3><p>Contact us and tell us what you need help with.</p><Link className="button button-primary" href="/contact">Contact Arkyl Ventures <ArrowUpRight size={16} /></Link></div>}
++    </section>
++  </>;
++}
+diff --git a/src/app/(site)/technology-it/page.tsx b/src/app/(site)/technology-it/page.tsx
+index 46fe1ac..c1a484d 100644
+--- a/src/app/(site)/technology-it/page.tsx
++++ b/src/app/(site)/technology-it/page.tsx
+@@ -1,17 +1,24 @@
+-import Link from "next/link";
+-import { ArrowUpRight } from "lucide-react";
+-import { PageHero } from "@/components/site/page-hero";
+-import { ContentCard } from "@/components/site/content-card";
+-import { technologyServices } from "@/data/public-content";
+-
+-export const metadata = { title: "Technology & IT Services | Arkyl Ventures", description: "Explore IT support, repairs, networking, website development and custom digital solutions from Arkyl Ventures." };
+-
+-export default function TechnologyPage() {
+-  return <>
+-    <PageHero eyebrow="TECHNOLOGY & IT" title="Technology that" accent="works for you." description="From everyday technical support to websites, software and connected business tools, explore practical technology services shaped around your requirements." primaryLabel="Discuss your requirements" primaryHref="/contact" secondaryLabel="View the shop" secondaryHref="/shop/technology" />
+-    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">OUR TECHNOLOGY SERVICES</span><h2>Support for the tools <span>you depend on.</span></h2><p>Explore the areas where we can assist. The exact scope, availability and quotation are confirmed after we understand your requirements.</p></div>
+-      <div className="content-card-grid">{technologyServices.map((service, index) => <ContentCard key={service.slug} number={String(index + 1).padStart(2, "0")} icon={service.icon} title={service.title} description={service.description} href={`/services/${service.slug}`} />)}</div>
+-    </section>
+-    <section className="page-callout section-container"><div><span className="section-kicker">NOT SURE WHERE TO START?</span><h2>Tell us what is <span>not working.</span></h2><p>Share the challenge or outcome you have in mind. We can help identify a sensible next step.</p></div><Link className="button button-primary" href="/contact">Make an enquiry <ArrowUpRight size={17} /></Link></section>
+-  </>;
+-}
++import Link from "next/link";
++import { ArrowUpRight } from "lucide-react";
++import { PageHero } from "@/components/site/page-hero";
++import { ContentCard } from "@/components/site/content-card";
++import { getServiceIcon } from "@/components/site/service-icon";
++import { prisma } from "@/lib/prisma";
++
++export const dynamic = "force-dynamic";
++export const metadata = { title: "Technology & IT Services | Arkyl Ventures", description: "Explore IT support, repairs, networking, website development and custom digital solutions from Arkyl Ventures." };
++
++export default async function TechnologyPage() {
++  const category = await prisma.serviceCategory.findFirst({
++    where: { slug: "technology-it", active: true },
++    include: { services: { where: { status: "PUBLISHED", isVisible: true, deletedAt: null }, orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { name: "asc" }] } },
++  });
++  const services = category?.services ?? [];
++  return <>
++    <PageHero eyebrow="TECHNOLOGY & IT" title="Technology that" accent="works for you." description="From everyday technical support to websites, software and connected business tools, explore practical technology services shaped around your requirements." primaryLabel="Discuss your requirements" primaryHref="/contact" secondaryLabel="View the shop" secondaryHref="/shop/technology" />
++    <section className="page-section section-container"><div className="page-section-heading"><span className="section-kicker">OUR TECHNOLOGY SERVICES</span><h2>Support for the tools <span>you depend on.</span></h2><p>Explore the areas where we can assist. The exact scope, availability and quotation are confirmed after we understand your requirements.</p></div>
++      {services.length ? <div className="content-card-grid">{services.map((service, index) => <ContentCard key={service.id} number={String(index + 1).padStart(2, "0")} icon={getServiceIcon(service.icon)} title={service.name} description={service.shortDescription} href={`/services/${service.slug}`} />)}</div> : <div className="service-empty-state"><h3>Technology services are being updated.</h3><p>Please contact us to discuss your requirements.</p><Link className="button button-primary" href="/contact">Contact Arkyl Ventures <ArrowUpRight size={16} /></Link></div>}
++    </section>
++    <section className="page-callout section-container"><div><span className="section-kicker">NOT SURE WHERE TO START?</span><h2>Tell us what is <span>not working.</span></h2><p>Share the challenge or outcome you have in mind. We can help identify a sensible next step.</p></div><Link className="button button-primary" href="/contact">Make an enquiry <ArrowUpRight size={17} /></Link></section>
++  </>;
++}
+diff --git a/src/app/admin/(dashboard)/layout.tsx b/src/app/admin/(dashboard)/layout.tsx
+new file mode 100644
+index 0000000..593c3c0
+--- /dev/null
++++ b/src/app/admin/(dashboard)/layout.tsx
+@@ -0,0 +1,32 @@
++import type { ReactNode } from "react";
++import Link from "next/link";
++import { redirect } from "next/navigation";
++import { signOut } from "@/auth";
++import { getCurrentAdmin } from "@/lib/admin-auth";
++
++export default async function AdminLayout({ children }: { children: ReactNode }) {
++  const admin = await getCurrentAdmin();
++  if (!admin) redirect("/admin/login");
++
++  return (
++    <div className="admin-shell">
++      <aside className="admin-sidebar">
++        <Link href="/admin" className="admin-brand"><span>AV</span><strong>ARKYL <em>VENTURES</em></strong></Link>
++        <div className="admin-sidebar-label">WORKSPACE</div>
++        <nav className="admin-sidebar-nav" aria-label="Administration">
++          <Link href="/admin">Overview</Link>
++          <Link href="/admin/services">Services</Link>
++          <Link href="/admin/service-categories">Service categories</Link>
++        </nav>
++        <div className="admin-sidebar-bottom">
++          <span className="admin-user-initial">{admin.name.slice(0, 1).toUpperCase()}</span>
++          <span className="admin-user-details"><strong>{admin.name}</strong><small>{admin.role.replace("_", " ")}</small></span>
++          <form action={async () => { "use server"; await signOut({ redirectTo: "/admin/login" }); }}>
++            <button className="admin-signout" type="submit">Sign out</button>
++          </form>
++        </div>
++      </aside>
++      <main className="admin-main">{children}</main>
++    </div>
++  );
++}
+diff --git a/src/app/admin/(dashboard)/page.tsx b/src/app/admin/(dashboard)/page.tsx
+new file mode 100644
+index 0000000..1f53ca5
+--- /dev/null
++++ b/src/app/admin/(dashboard)/page.tsx
+@@ -0,0 +1,31 @@
++import Link from "next/link";
++import { ArrowUpRight, Eye, Layers3, Plus, Settings2 } from "lucide-react";
++import { prisma } from "@/lib/prisma";
++
++export const metadata = { title: "Administration | Arkyl Ventures" };
++
++export default async function AdminHomePage({ searchParams }: { searchParams: Promise<{ access?: string }> }) {
++  const params = await searchParams;
++  const [total, published, hidden, drafts, categories] = await Promise.all([
++    prisma.service.count({ where: { deletedAt: null } }),
++    prisma.service.count({ where: { status: "PUBLISHED", isVisible: true, deletedAt: null } }),
++    prisma.service.count({ where: { status: "PUBLISHED", isVisible: false, deletedAt: null } }),
++    prisma.service.count({ where: { status: "DRAFT", deletedAt: null } }),
++    prisma.serviceCategory.count({ where: { active: true } }),
++  ]);
++
++  return <>
++    <header className="admin-page-header"><div><span className="admin-eyebrow">OVERVIEW</span><h1>Services workspace</h1><p>Manage the services customers can discover on the Arkyl Ventures website.</p></div><Link className="admin-primary-button admin-header-action" href="/admin/services/new"><Plus size={16} /> Add service</Link></header>
++    {params.access === "denied" ? <p className="admin-alert" role="alert">Your account does not have permission to perform that action.</p> : null}
++    <section className="admin-stat-grid" aria-label="Service overview">
++      <article className="admin-stat-card"><span>Total services</span><strong>{total}</strong><small>Across all service categories</small></article>
++      <article className="admin-stat-card"><span>Published & visible</span><strong>{published}</strong><small>Currently displayed publicly</small></article>
++      <article className="admin-stat-card"><span>Published but hidden</span><strong>{hidden}</strong><small>Not displayed on the website</small></article>
++      <article className="admin-stat-card"><span>Draft services</span><strong>{drafts}</strong><small>Not yet published</small></article>
++    </section>
++    <section className="admin-panel admin-quick-panel"><div className="admin-panel-heading"><div><span className="admin-eyebrow">MANAGEMENT</span><h2>Manage your service catalogue</h2></div><span className="admin-panel-icon"><Layers3 size={19} /></span></div>
++      <div className="admin-quick-links"><Link href="/admin/services"><Settings2 size={19} /><span><strong>Manage services</strong><small>Create, edit, publish, hide or archive services</small></span><ArrowUpRight size={17} /></Link><Link href="/admin/service-categories"><Layers3 size={19} /><span><strong>Manage categories</strong><small>{categories} active categories · Add or deactivate categories</small></span><ArrowUpRight size={17} /></Link><Link href="/admin/services/new"><Plus size={19} /><span><strong>Create a service</strong><small>Add a new service without changing application code</small></span><ArrowUpRight size={17} /></Link></div>
++      <p className="admin-note"><Eye size={15} /> A service appears publicly only when its status is Published, its visibility is enabled and its category is active.</p>
++    </section>
++  </>;
++}
+diff --git a/src/app/admin/(dashboard)/service-categories/page.tsx b/src/app/admin/(dashboard)/service-categories/page.tsx
+new file mode 100644
+index 0000000..df053ce
+--- /dev/null
++++ b/src/app/admin/(dashboard)/service-categories/page.tsx
+@@ -0,0 +1,21 @@
++import { Layers3 } from "lucide-react";
++import { prisma } from "@/lib/prisma";
++import { createServiceCategory, toggleServiceCategory } from "../services/actions";
++
++export const metadata = { title: "Service categories | Arkyl Ventures" };
++
++export default async function ServiceCategoriesPage({ searchParams }: { searchParams: Promise<{ error?: string; created?: string }> }) {
++  const params = await searchParams;
++  const categories = await prisma.serviceCategory.findMany({ include: { _count: { select: { services: true } } }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
++  return <>
++    <header className="admin-page-header"><div><span className="admin-eyebrow">SERVICE STRUCTURE</span><h1>Service categories</h1><p>Group related services and control whether a category is available on the public website.</p></div></header>
++    {params.created ? <p className="admin-success-alert">Category “{params.created}” was created.</p> : null}
++    {params.error ? <p className="admin-alert">{params.error === "duplicate" ? "A category with that name or URL slug already exists." : "Please enter a valid category name and description."}</p> : null}
++    <div className="admin-category-layout">
++      <section className="admin-panel"><div className="admin-panel-heading"><div><span className="admin-eyebrow">EXISTING CATEGORIES</span><h2>Categories</h2></div><span className="admin-panel-icon"><Layers3 size={19} /></span></div>
++        <div className="admin-category-list">{categories.map((category) => <article key={category.id} className="admin-category-row"><div><strong>{category.name}</strong><small>/{category.slug} · {category._count.services} services</small>{category.description ? <p>{category.description}</p> : null}</div><div className="admin-category-actions"><span className={`admin-status ${category.active ? "status-visible" : "status-hidden"}`}>{category.active ? "Active" : "Inactive"}</span><form action={toggleServiceCategory}><input type="hidden" name="id" value={category.id} /><button className="admin-secondary-button" type="submit">{category.active ? "Deactivate" : "Activate"}</button></form></div></article>)}{categories.length === 0 ? <p className="admin-empty-cell">No service categories yet.</p> : null}</div>
++      </section>
++      <section className="admin-panel admin-category-create"><span className="admin-eyebrow">ADD CATEGORY</span><h2>Create a category</h2><form action={createServiceCategory} className="admin-stacked-form"><label className="admin-field">Category name<input name="name" required minLength={2} maxLength={100} placeholder="e.g. Financial & Credit Solutions" /></label><label className="admin-field">URL slug<input name="slug" maxLength={140} placeholder="Generated from category name if blank" /></label><label className="admin-field">Description<textarea name="description" rows={4} maxLength={500} placeholder="Briefly describe this service category." /></label><button className="admin-primary-button" type="submit">Create category</button></form></section>
++    </div>
++  </>;
++}
+diff --git a/src/app/admin/(dashboard)/services/[id]/page.tsx b/src/app/admin/(dashboard)/services/[id]/page.tsx
+new file mode 100644
+index 0000000..5096695
+--- /dev/null
++++ b/src/app/admin/(dashboard)/services/[id]/page.tsx
+@@ -0,0 +1,23 @@
++import Link from "next/link";
++import { notFound } from "next/navigation";
++import { ArrowLeft } from "lucide-react";
++import { prisma } from "@/lib/prisma";
++import { ServiceForm } from "@/components/admin/service-form";
++
++export const metadata = { title: "Edit service | Arkyl Ventures" };
++
++export default async function EditServicePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string }> }) {
++  const [{ id }, query] = await Promise.all([params, searchParams]);
++  const [service, categories] = await Promise.all([
++    prisma.service.findUnique({ where: { id } }),
++    prisma.serviceCategory.findMany({ orderBy: { sortOrder: "asc" } }),
++  ]);
++  if (!service || service.deletedAt) notFound();
++  return <>
++    <div className="admin-breadcrumb"><Link href="/admin/services"><ArrowLeft size={14} /> Services</Link><span>/</span><span>Edit service</span></div>
++    <header className="admin-page-header admin-page-header-compact"><div><span className="admin-eyebrow">SERVICE CATALOGUE</span><h1>Edit {service.name}</h1><p>Update the service details, publication status and public visibility.</p></div></header>
++    {query.saved ? <p className="admin-success-alert">Your service changes have been saved.</p> : null}
++    {query.error === "publish-first" ? <p className="admin-alert">Set the publication status to Published before making this service visible.</p> : null}
++    <ServiceForm service={service} categories={categories} error={query.error === "publish-first" ? undefined : query.error} />
++  </>;
++}
+diff --git a/src/app/admin/(dashboard)/services/actions.ts b/src/app/admin/(dashboard)/services/actions.ts
+new file mode 100644
+index 0000000..0b56794
+--- /dev/null
++++ b/src/app/admin/(dashboard)/services/actions.ts
+@@ -0,0 +1,218 @@
++"use server";
++
++import { Prisma } from "@prisma/client";
++import { z } from "zod";
++import { revalidatePath } from "next/cache";
++import { redirect } from "next/navigation";
++import { requireAdmin } from "@/lib/admin-auth";
++import { prisma } from "@/lib/prisma";
++
++const serviceSchema = z.object({
++  name: z.string().trim().min(2).max(120),
++  slug: z.string().trim().max(140),
++  shortDescription: z.string().trim().min(10).max(240),
++  description: z.string().trim().min(20).max(6000),
++  categoryId: z.string().trim().min(1),
++  icon: z.string().trim().max(60),
++  heroImageUrl: z.string().trim().max(500).refine((value) => !value || /^https?:\/\//i.test(value), "Use an http or https image URL."),
++  status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
++  startingPrice: z.string().trim().refine((value) => !value || /^\d{1,10}(\.\d{1,2})?$/.test(value), "Enter a valid amount with up to two decimal places."),
++  priceLabel: z.string().trim().max(80),
++  sortOrder: z.string().trim().refine((value) => /^\d{1,4}$/.test(value), "Display order must be a whole number."),
++  seoTitle: z.string().trim().max(160),
++  seoDescription: z.string().trim().max(320),
++});
++
++function value(formData: FormData, key: string) {
++  return String(formData.get(key) ?? "").trim();
++}
++
++function slugify(input: string) {
++  return input.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 140);
++}
++
++function readServiceForm(formData: FormData) {
++  return serviceSchema.safeParse({
++    name: value(formData, "name"),
++    slug: value(formData, "slug"),
++    shortDescription: value(formData, "shortDescription"),
++    description: value(formData, "description"),
++    categoryId: value(formData, "categoryId"),
++    icon: value(formData, "icon") || "BriefcaseBusiness",
++    heroImageUrl: value(formData, "heroImageUrl"),
++    status: value(formData, "status") || "DRAFT",
++    startingPrice: value(formData, "startingPrice"),
++    priceLabel: value(formData, "priceLabel"),
++    sortOrder: value(formData, "sortOrder") || "0",
++    seoTitle: value(formData, "seoTitle"),
++    seoDescription: value(formData, "seoDescription"),
++  });
++}
++
++function revalidateServicePages(slug?: string) {
++  revalidatePath("/");
++  revalidatePath("/technology-it");
++  revalidatePath("/business-services");
++  revalidatePath("/admin");
++  revalidatePath("/admin/services");
++  if (slug) revalidatePath(`/services/${slug}`);
++}
++
++export async function createService(formData: FormData) {
++  const admin = await requireAdmin(["SUPER_ADMIN", "ADMIN"]);
++  const parsed = readServiceForm(formData);
++  if (!parsed.success) redirect("/admin/services/new?error=validation");
++  const data = parsed.data;
++  const slug = slugify(data.slug || data.name);
++  if (!slug) redirect("/admin/services/new?error=validation");
++  const category = await prisma.serviceCategory.findUnique({ where: { id: data.categoryId } });
++  if (!category) redirect("/admin/services/new?error=category");
++  const status = data.status;
++  const visible = formData.get("isVisible") === "on" && status === "PUBLISHED";
++
++  try {
++    const service = await prisma.$transaction(async (tx) => {
++      const created = await tx.service.create({
++        data: {
++          name: data.name,
++          slug,
++          shortDescription: data.shortDescription,
++          description: data.description,
++          categoryId: data.categoryId,
++          icon: data.icon,
++          heroImageUrl: data.heroImageUrl || null,
++          status,
++          isVisible: visible,
++          featured: formData.get("featured") === "on",
++          requiresQuote: formData.get("requiresQuote") === "on",
++          acceptsApplications: formData.get("acceptsApplications") === "on",
++          startingPrice: data.startingPrice ? new Prisma.Decimal(data.startingPrice) : null,
++          priceLabel: data.priceLabel || null,
++          sortOrder: Number(data.sortOrder),
++          seoTitle: data.seoTitle || null,
++          seoDescription: data.seoDescription || null,
++        },
++      });
++      await tx.auditLog.create({ data: { adminId: admin.id, action: "SERVICE_CREATED", entityType: "Service", entityId: created.id, metadata: { name: created.name, slug: created.slug } } });
++      return created;
++    });
++    revalidateServicePages(service.slug);
++    redirect(`/admin/services/${service.id}?saved=1`);
++  } catch (error) {
++    if (error && typeof error === "object" && "digest" in error) throw error;
++    redirect("/admin/services/new?error=slug");
++  }
++}
++
++export async function updateService(formData: FormData) {
++  const admin = await requireAdmin(["SUPER_ADMIN", "ADMIN"]);
++  const id = value(formData, "id");
++  const existing = await prisma.service.findUnique({ where: { id } });
++  if (!existing || existing.deletedAt) redirect("/admin/services?error=not-found");
++  const parsed = readServiceForm(formData);
++  if (!parsed.success) redirect(`/admin/services/${id}?error=validation`);
++  const data = parsed.data;
++  const slug = slugify(data.slug || data.name);
++  if (!slug) redirect(`/admin/services/${id}?error=validation`);
++  const category = await prisma.serviceCategory.findUnique({ where: { id: data.categoryId } });
++  if (!category) redirect(`/admin/services/${id}?error=category`);
++  const status = data.status;
++  const visible = formData.get("isVisible") === "on" && status === "PUBLISHED";
++
++  try {
++    const service = await prisma.$transaction(async (tx) => {
++      const updated = await tx.service.update({
++        where: { id },
++        data: {
++          name: data.name,
++          slug,
++          shortDescription: data.shortDescription,
++          description: data.description,
++          categoryId: data.categoryId,
++          icon: data.icon,
++          heroImageUrl: data.heroImageUrl || null,
++          status,
++          isVisible: visible,
++          featured: formData.get("featured") === "on",
++          requiresQuote: formData.get("requiresQuote") === "on",
++          acceptsApplications: formData.get("acceptsApplications") === "on",
++          startingPrice: data.startingPrice ? new Prisma.Decimal(data.startingPrice) : null,
++          priceLabel: data.priceLabel || null,
++          sortOrder: Number(data.sortOrder),
++          seoTitle: data.seoTitle || null,
++          seoDescription: data.seoDescription || null,
++        },
++      });
++      await tx.auditLog.create({ data: { adminId: admin.id, action: "SERVICE_UPDATED", entityType: "Service", entityId: updated.id, metadata: { name: updated.name, slug: updated.slug } } });
++      return updated;
++    });
++    revalidateServicePages(existing.slug);
++    revalidateServicePages(service.slug);
++    redirect(`/admin/services/${service.id}?saved=1`);
++  } catch (error) {
++    if (error && typeof error === "object" && "digest" in error) throw error;
++    redirect(`/admin/services/${id}?error=slug`);
++  }
++}
++
++export async function toggleServiceVisibility(formData: FormData) {
++  const admin = await requireAdmin(["SUPER_ADMIN", "ADMIN"]);
++  const id = value(formData, "id");
++  const service = await prisma.service.findUnique({ where: { id } });
++  if (!service || service.deletedAt) redirect("/admin/services?error=not-found");
++  if (service.status !== "PUBLISHED" && !service.isVisible) redirect(`/admin/services/${id}?error=publish-first`);
++  const updated = await prisma.$transaction(async (tx) => {
++    const result = await tx.service.update({ where: { id }, data: { isVisible: !service.isVisible } });
++    await tx.auditLog.create({ data: { adminId: admin.id, action: result.isVisible ? "SERVICE_SHOWN" : "SERVICE_HIDDEN", entityType: "Service", entityId: id, metadata: { name: service.name } } });
++    return result;
++  });
++  revalidateServicePages(updated.slug);
++}
++
++export async function archiveService(formData: FormData) {
++  const admin = await requireAdmin(["SUPER_ADMIN", "ADMIN"]);
++  const id = value(formData, "id");
++  const service = await prisma.service.findUnique({ where: { id } });
++  if (!service || service.deletedAt) redirect("/admin/services?error=not-found");
++  await prisma.$transaction(async (tx) => {
++    await tx.service.update({ where: { id }, data: { status: "ARCHIVED", isVisible: false } });
++    await tx.auditLog.create({ data: { adminId: admin.id, action: "SERVICE_ARCHIVED", entityType: "Service", entityId: id, metadata: { name: service.name } } });
++  });
++  revalidateServicePages(service.slug);
++  redirect("/admin/services?archived=1");
++}
++
++export async function createServiceCategory(formData: FormData) {
++  const admin = await requireAdmin(["SUPER_ADMIN", "ADMIN"]);
++  const name = value(formData, "name");
++  const description = value(formData, "description");
++  const slug = slugify(value(formData, "slug") || name);
++  if (name.length < 2 || name.length > 100 || !slug || description.length > 500) redirect("/admin/service-categories?error=validation");
++  try {
++    const category = await prisma.$transaction(async (tx) => {
++      const created = await tx.serviceCategory.create({ data: { name, slug, description: description || null } });
++      await tx.auditLog.create({ data: { adminId: admin.id, action: "SERVICE_CATEGORY_CREATED", entityType: "ServiceCategory", entityId: created.id, metadata: { name: created.name, slug: created.slug } } });
++      return created;
++    });
++    revalidatePath("/admin/service-categories");
++    redirect(`/admin/service-categories?created=${encodeURIComponent(category.name)}`);
++  } catch (error) {
++    if (error && typeof error === "object" && "digest" in error) throw error;
++    redirect("/admin/service-categories?error=duplicate");
++  }
++}
++
++export async function toggleServiceCategory(formData: FormData) {
++  const admin = await requireAdmin(["SUPER_ADMIN", "ADMIN"]);
++  const id = value(formData, "id");
++  const category = await prisma.serviceCategory.findUnique({ where: { id } });
++  if (!category) redirect("/admin/service-categories?error=not-found");
++  const updated = await prisma.$transaction(async (tx) => {
++    const result = await tx.serviceCategory.update({ where: { id }, data: { active: !category.active } });
++    await tx.auditLog.create({ data: { adminId: admin.id, action: result.active ? "SERVICE_CATEGORY_ACTIVATED" : "SERVICE_CATEGORY_DEACTIVATED", entityType: "ServiceCategory", entityId: id, metadata: { name: category.name } } });
++    return result;
++  });
++  revalidatePath("/admin/service-categories");
++  revalidatePath("/technology-it");
++  revalidatePath("/business-services");
++}
+diff --git a/src/app/admin/(dashboard)/services/new/page.tsx b/src/app/admin/(dashboard)/services/new/page.tsx
+new file mode 100644
+index 0000000..78440de
+--- /dev/null
++++ b/src/app/admin/(dashboard)/services/new/page.tsx
+@@ -0,0 +1,16 @@
++import Link from "next/link";
++import { ArrowLeft } from "lucide-react";
++import { prisma } from "@/lib/prisma";
++import { ServiceForm } from "@/components/admin/service-form";
++
++export const metadata = { title: "Create a service | Arkyl Ventures" };
++
++export default async function NewServicePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
++  const params = await searchParams;
++  const categories = await prisma.serviceCategory.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
++  return <>
++    <div className="admin-breadcrumb"><Link href="/admin/services"><ArrowLeft size={14} /> Services</Link><span>/</span><span>New service</span></div>
++    <header className="admin-page-header admin-page-header-compact"><div><span className="admin-eyebrow">SERVICE CATALOGUE</span><h1>Create a service</h1><p>Add a service to the database. It will not appear publicly unless you publish and show it.</p></div></header>
++    {categories.length ? <ServiceForm categories={categories} error={params.error} /> : <section className="admin-panel admin-empty-state"><h2>Create a service category first</h2><p>Services must belong to a category. Add a category before creating your first service.</p><Link className="admin-primary-button" href="/admin/service-categories">Manage service categories</Link></section>}
++  </>;
++}
+diff --git a/src/app/admin/(dashboard)/services/page.tsx b/src/app/admin/(dashboard)/services/page.tsx
+new file mode 100644
+index 0000000..895b363
+--- /dev/null
++++ b/src/app/admin/(dashboard)/services/page.tsx
+@@ -0,0 +1,34 @@
++import Link from "next/link";
++import { ArrowUpRight, Plus, Search } from "lucide-react";
++import { prisma } from "@/lib/prisma";
++import { archiveService, toggleServiceVisibility } from "./actions";
++import { ConfirmAction } from "@/components/admin/confirm-action";
++
++export const metadata = { title: "Manage services | Arkyl Ventures" };
++
++export default async function ServicesAdminPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string; archived?: string; error?: string }> }) {
++  const params = await searchParams;
++  const query = params.q?.trim() ?? "";
++  const status = ["DRAFT", "PUBLISHED", "ARCHIVED"].includes(params.status ?? "") ? params.status as "DRAFT" | "PUBLISHED" | "ARCHIVED" : undefined;
++  const services = await prisma.service.findMany({
++    where: { deletedAt: null, ...(status ? { status } : {}), ...(query ? { OR: [{ name: { contains: query, mode: "insensitive" } }, { slug: { contains: query, mode: "insensitive" } }] } : {}) },
++    include: { category: true },
++    orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { name: "asc" }],
++  });
++
++  return <>
++    <header className="admin-page-header"><div><span className="admin-eyebrow">SERVICE CATALOGUE</span><h1>Services</h1><p>Create and control the services shown across your public website.</p></div><Link className="admin-primary-button admin-header-action" href="/admin/services/new"><Plus size={16} /> Add service</Link></header>
++    {params.archived ? <p className="admin-success-alert">The service has been archived and is no longer public.</p> : null}
++    {params.error ? <p className="admin-alert">The requested service could not be found.</p> : null}
++    <section className="admin-panel">
++      <form className="admin-filter-bar" method="get"><label className="admin-search-field"><Search size={16} /><input name="q" defaultValue={query} placeholder="Search services by name or slug" /></label><select name="status" defaultValue={status ?? "ALL"}><option value="ALL">All statuses</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="ARCHIVED">Archived</option></select><button className="admin-secondary-button" type="submit">Filter</button></form>
++      <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Service</th><th>Category</th><th>Publication</th><th>Website visibility</th><th>Actions</th></tr></thead><tbody>
++        {services.map((service) => <tr key={service.id}><td><strong>{service.name}</strong><small>/{service.slug}</small></td><td>{service.category.name}</td><td><span className={`admin-status status-${service.status.toLowerCase()}`}>{service.status}</span></td><td><span className={`admin-status ${service.status === "PUBLISHED" && service.isVisible && service.category.active ? "status-visible" : "status-hidden"}`}>{service.status === "PUBLISHED" && service.isVisible && service.category.active ? "Visible" : "Hidden"}</span></td><td><div className="admin-row-actions"><Link href={`/admin/services/${service.id}`}>Edit <ArrowUpRight size={13} /></Link>
++          {service.status === "PUBLISHED" ? <form action={toggleServiceVisibility}><input type="hidden" name="id" value={service.id} /><button type="submit">{service.isVisible ? "Hide" : "Show"}</button></form> : null}
++          {service.status !== "ARCHIVED" ? <ConfirmAction action={archiveService} id={service.id}>Archive</ConfirmAction> : null}</div></td></tr>)}
++        {services.length === 0 ? <tr><td colSpan={5} className="admin-empty-cell">No services match your filters. Create a service or change the search.</td></tr> : null}
++      </tbody></table></div>
++      <div className="admin-table-footer">Showing {services.length} service{services.length === 1 ? "" : "s"}. Archived records are retained and can be restored by editing their status.</div>
++    </section>
++  </>;
++}
+diff --git a/src/app/admin/login/page.tsx b/src/app/admin/login/page.tsx
+new file mode 100644
+index 0000000..eb2f465
+--- /dev/null
++++ b/src/app/admin/login/page.tsx
+@@ -0,0 +1,23 @@
++import { redirect } from "next/navigation";
++import Link from "next/link";
++import { ArrowLeft } from "lucide-react";
++import { getCurrentAdmin } from "@/lib/admin-auth";
++import { LoginForm } from "@/components/admin/login-form";
++
++export const metadata = { title: "Administrator sign in | Arkyl Ventures" };
++
++export default async function AdminLoginPage() {
++  const admin = await getCurrentAdmin();
++  if (admin) redirect("/admin");
++
++  return (
++    <main className="admin-auth-page">
++      <section className="admin-auth-card">
++        <Link href="/" className="admin-auth-brand"><span>AV</span><strong>ARKYL <em>VENTURES</em></strong></Link>
++        <div className="admin-auth-heading"><span className="admin-eyebrow">SECURE ADMINISTRATION</span><h1>Welcome back.</h1><p>Sign in to manage Arkyl Ventures services and website visibility.</p></div>
++        <LoginForm />
++        <Link href="/" className="admin-auth-back"><ArrowLeft size={14} /> Return to the public website</Link>
++      </section>
++    </main>
++  );
++}
+diff --git a/src/app/api/auth/[...nextauth]/route.ts b/src/app/api/auth/[...nextauth]/route.ts
+new file mode 100644
+index 0000000..86c9f3d
+--- /dev/null
++++ b/src/app/api/auth/[...nextauth]/route.ts
+@@ -0,0 +1,3 @@
++import { handlers } from "@/auth";
++
++export const { GET, POST } = handlers;
+diff --git a/src/app/globals.css b/src/app/globals.css
+index 5af7fd0..14bea8d 100644
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -1812,4 +1812,333 @@ img {
+   color: var(--color-muted);
+   font-size: 11px;
+   line-height: 1.8;
+-}
+\ No newline at end of file
++}
++/* V3 — secure service administration */
++.admin-auth-page {
++  min-height: 100vh;
++  display: grid;
++  place-items: center;
++  padding: 32px 18px;
++  background: var(--gradient-page);
++}
++
++.admin-auth-card {
++  width: min(100%, 450px);
++  padding: 42px;
++  border: 1px solid var(--color-border-strong);
++  border-radius: 16px;
++  background: rgba(16, 34, 41, .94);
++  box-shadow: 0 28px 90px rgba(0, 0, 0, .3);
++}
++
++.admin-auth-brand,
++.admin-brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 10px;
++  color: var(--color-text);
++  font-size: 12px;
++  letter-spacing: .14em;
++}
++
++.admin-auth-brand>span,
++.admin-brand>span {
++  display: grid;
++  place-items: center;
++  width: 36px;
++  height: 36px;
++  border: 1px solid var(--color-accent);
++  border-radius: 9px;
++  color: var(--color-accent);
++  font-size: 13px;
++  font-weight: 800;
++  letter-spacing: -.08em;
++}
++
++.admin-auth-brand em,
++.admin-brand em {
++  color: var(--color-accent);
++  font-style: normal;
++}
++
++.admin-auth-heading {
++  margin: 42px 0 27px;
++}
++
++.admin-eyebrow {
++  color: var(--color-accent);
++  font-size: 9px;
++  font-weight: 700;
++  letter-spacing: .18em;
++}
++
++.admin-auth-heading h1,
++.admin-page-header h1 {
++  margin: 10px 0 8px;
++  color: var(--color-text);
++  font-size: clamp(29px, 4vw, 38px);
++  font-weight: 600;
++  letter-spacing: -.055em;
++}
++
++.admin-auth-heading p,
++.admin-page-header p {
++  margin: 0;
++  color: var(--color-muted);
++  font-size: 12px;
++  line-height: 1.75;
++}
++
++.admin-login-form,
++.admin-stacked-form {
++  display: flex;
++  flex-direction: column;
++  gap: 12px;
++}
++
++.admin-login-form>label,
++.admin-field {
++  color: var(--color-text-soft);
++  font-size: 11px;
++  font-weight: 600;
++}
++
++.admin-login-form input,
++.admin-field input,
++.admin-field textarea,
++.admin-field select,
++.admin-filter-bar select,
++.admin-search-field input {
++  width: 100%;
++  min-width: 0;
++  margin-top: 7px;
++  padding: 12px 13px;
++  border: 1px solid var(--color-border-strong);
++  border-radius: 7px;
++  outline: none;
++  background: rgba(5, 18, 23, .72);
++  color: var(--color-text);
++  font: inherit;
++  font-size: 12px;
++}
++
++.admin-login-form input:focus,
++.admin-field input:focus,
++.admin-field textarea:focus,
++.admin-field select:focus,
++.admin-filter-bar select:focus,
++.admin-search-field input:focus {
++  border-color: var(--color-accent);
++}
++
++.admin-primary-button,
++.admin-secondary-button {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 9px;
++  min-height: 42px;
++  padding: 0 16px;
++  border: 1px solid transparent;
++  border-radius: 7px;
++  font-size: 11px;
++  font-weight: 700;
++  cursor: pointer;
++  transition: background .2s ease, border-color .2s ease, transform .2s ease;
++}
++
++.admin-primary-button {
++  background: var(--color-accent);
++  color: #071a18;
++}
++
++.admin-primary-button:hover { background: #7fffd2; transform: translateY(-1px); }
++.admin-primary-button:disabled { opacity: .65; cursor: wait; transform: none; }
++.admin-secondary-button { border-color: var(--color-border-strong); background: rgba(255,255,255,.025); color: var(--color-text-soft); }
++.admin-secondary-button:hover { border-color: var(--color-accent); color: var(--color-text); }
++
++.admin-login-form .admin-primary-button { width: 100%; margin-top: 9px; }
++.admin-form-error,
++.admin-alert {
++  padding: 11px 13px;
++  border: 1px solid rgba(244, 129, 129, .28);
++  border-radius: 7px;
++  background: rgba(130, 40, 40, .12);
++  color: #ffb1b1;
++  font-size: 11px;
++  line-height: 1.6;
++}
++
++.admin-success-alert {
++  padding: 11px 13px;
++  border: 1px solid rgba(80, 245, 189, .25);
++  border-radius: 7px;
++  background: rgba(80, 245, 189, .07);
++  color: var(--color-accent-soft);
++  font-size: 11px;
++}
++
++.admin-auth-back {
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++  margin-top: 27px;
++  color: var(--color-muted);
++  font-size: 10px;
++}
++.admin-auth-back:hover { color: var(--color-accent); }
++
++.admin-shell {
++  min-height: 100vh;
++  display: grid;
++  grid-template-columns: 246px minmax(0, 1fr);
++  background: #08171d;
++  color: var(--color-text);
++}
++
++.admin-sidebar {
++  position: sticky;
++  top: 0;
++  display: flex;
++  flex-direction: column;
++  height: 100vh;
++  padding: 25px 17px 18px;
++  border-right: 1px solid var(--color-border);
++  background: #0a1b21;
++}
++
++.admin-brand { padding: 0 7px 30px; font-size: 10px; }
++.admin-sidebar-label { padding: 0 11px 11px; color: var(--color-subtle); font-size: 9px; font-weight: 700; letter-spacing: .16em; }
++.admin-sidebar-nav { display: flex; flex-direction: column; gap: 5px; }
++.admin-sidebar-nav a { padding: 12px 11px; border: 1px solid transparent; border-radius: 6px; color: var(--color-text-soft); font-size: 12px; }
++.admin-sidebar-nav a:hover { border-color: var(--color-border); background: rgba(255,255,255,.035); color: var(--color-text); }
++.admin-sidebar-bottom { display: flex; align-items: center; gap: 9px; margin-top: auto; padding: 15px 4px 0; border-top: 1px solid var(--color-border); }
++.admin-user-initial { display: grid; place-items: center; width: 31px; height: 31px; flex: 0 0 auto; border-radius: 50%; background: rgba(80,245,189,.13); color: var(--color-accent); font-size: 12px; font-weight: 700; }
++.admin-user-details { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
++.admin-user-details strong { overflow: hidden; color: var(--color-text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
++.admin-user-details small { color: var(--color-muted); font-size: 8px; text-transform: uppercase; }
++.admin-signout { padding: 5px 0; border: 0; background: transparent; color: var(--color-muted); font-size: 9px; cursor: pointer; }
++.admin-signout:hover { color: #ffaaaa; }
++.admin-main { width: min(100%, 1500px); padding: 42px clamp(20px, 4vw, 58px) 70px; }
++.admin-page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 25px; margin-bottom: 30px; }
++.admin-page-header h1 { margin-bottom: 7px; }
++.admin-page-header-compact { margin-top: 23px; }
++.admin-header-action { flex: 0 0 auto; }
++.admin-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-bottom: 24px; }
++.admin-stat-card,
++.admin-panel { border: 1px solid var(--color-border); border-radius: 9px; background: rgba(16,34,41,.7); }
++.admin-stat-card { min-height: 125px; padding: 19px; }
++.admin-stat-card>span { display: block; color: var(--color-muted); font-size: 10px; }
++.admin-stat-card>strong { display: block; margin-top: 14px; color: var(--color-text); font-size: 31px; font-weight: 600; letter-spacing: -.06em; }
++.admin-stat-card>small { display: block; margin-top: 3px; color: var(--color-subtle); font-size: 9px; }
++.admin-panel { padding: 23px; }
++.admin-quick-panel { margin-top: 15px; }
++.admin-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 19px; }
++.admin-panel-heading h2,
++.admin-form-section h2,
++.admin-category-create h2 { margin: 7px 0 0; color: var(--color-text); font-size: 18px; font-weight: 600; letter-spacing: -.035em; }
++.admin-panel-icon { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--color-border); border-radius: 7px; color: var(--color-accent); }
++.admin-quick-links { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
++.admin-quick-links>a { display: flex; align-items: center; gap: 12px; min-height: 85px; padding: 14px; border: 1px solid var(--color-border); border-radius: 7px; color: var(--color-accent); }
++.admin-quick-links>a:hover { border-color: rgba(80,245,189,.45); background: rgba(80,245,189,.04); }
++.admin-quick-links>a>span { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 5px; }
++.admin-quick-links strong { color: var(--color-text); font-size: 11px; }
++.admin-quick-links small { color: var(--color-muted); font-size: 9px; line-height: 1.5; }
++.admin-note { display: flex; align-items: center; gap: 8px; margin: 20px 0 0; color: var(--color-muted); font-size: 10px; }
++.admin-note svg { color: var(--color-accent); }
++.admin-breadcrumb { display: flex; align-items: center; gap: 9px; color: var(--color-subtle); font-size: 10px; }
++.admin-breadcrumb a { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-soft); }
++.admin-breadcrumb a:hover { color: var(--color-accent); }
++.admin-form-panel { display: flex; flex-direction: column; gap: 13px; }
++.admin-form-section { padding: 23px; border: 1px solid var(--color-border); border-radius: 9px; background: rgba(16,34,41,.7); }
++.admin-form-section>div:first-child>p { margin: 8px 0 0; color: var(--color-muted); font-size: 10px; }
++.admin-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 17px; margin-top: 20px; }
++.admin-field { display: flex; min-width: 0; flex-direction: column; }
++.admin-field-wide { grid-column: 1 / -1; }
++.admin-field textarea { resize: vertical; line-height: 1.6; }
++.admin-field select { appearance: auto; }
++.admin-form-hint { margin: 12px 0 0; color: var(--color-subtle); font-size: 9px; line-height: 1.65; }
++.admin-check-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 20px; }
++.admin-check-grid label { display: flex; align-items: center; gap: 9px; color: var(--color-text-soft); font-size: 10px; }
++.admin-check-grid input { accent-color: var(--color-accent); }
++.admin-form-actions { display: flex; justify-content: flex-end; gap: 9px; padding: 4px 0; }
++.admin-form-actions>a { display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; color: var(--color-muted); font-size: 10px; }
++.admin-filter-bar { display: flex; align-items: center; gap: 9px; margin-bottom: 18px; }
++.admin-search-field { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 150px; color: var(--color-muted); }
++.admin-search-field input { margin: 0; }
++.admin-filter-bar select { width: 160px; margin: 0; }
++.admin-table-wrap { overflow-x: auto; }
++.admin-table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
++.admin-table th { padding: 12px 11px; border-bottom: 1px solid var(--color-border-strong); color: var(--color-subtle); font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
++.admin-table td { padding: 14px 11px; border-bottom: 1px solid rgba(164,184,190,.09); color: var(--color-text-soft); font-size: 10px; }
++.admin-table td:first-child { min-width: 205px; }
++.admin-table td strong,.admin-table td small { display: block; }
++.admin-table td strong { color: var(--color-text); font-size: 11px; font-weight: 600; }
++.admin-table td small { margin-top: 5px; color: var(--color-subtle); font-size: 9px; }
++.admin-status { display: inline-flex; align-items: center; padding: 5px 8px; border: 1px solid var(--color-border); border-radius: 99px; font-size: 8px; font-weight: 700; letter-spacing: .04em; }
++.status-published,.status-visible { border-color: rgba(80,245,189,.25); background: rgba(80,245,189,.07); color: var(--color-accent-soft); }
++.status-draft,.status-hidden { border-color: rgba(185,197,193,.17); background: rgba(185,197,193,.04); color: var(--color-muted); }
++.status-archived { border-color: rgba(244,129,129,.25); background: rgba(130,40,40,.1); color: #ffb1b1; }
++.admin-row-actions { display: flex; align-items: center; gap: 12px; }
++.admin-row-actions a,.admin-row-actions button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--color-accent-soft); font-size: 9px; cursor: pointer; }
++.admin-row-actions button:hover,.admin-row-actions a:hover { color: var(--color-text); }
++.admin-row-actions .admin-danger-text { color: #e89b9b; }
++.admin-empty-cell { padding: 32px !important; color: var(--color-muted) !important; text-align: center; }
++.admin-table-footer { padding-top: 14px; color: var(--color-subtle); font-size: 9px; }
++.admin-category-layout { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(280px,.8fr); gap: 15px; align-items: start; }
++.admin-category-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 0; border-bottom: 1px solid rgba(164,184,190,.1); }
++.admin-category-row:last-child { border-bottom: 0; }
++.admin-category-row strong,.admin-category-row small { display: block; }
++.admin-category-row strong { color: var(--color-text); font-size: 11px; }
++.admin-category-row small { margin-top: 5px; color: var(--color-subtle); font-size: 9px; }
++.admin-category-row p { margin: 6px 0 0; color: var(--color-muted); font-size: 9px; }
++.admin-category-actions { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
++.admin-category-actions .admin-secondary-button { min-height: 32px; padding: 0 10px; font-size: 9px; }
++.admin-category-create { padding: 23px; }
++.admin-category-create h2 { margin-bottom: 20px; }
++.admin-empty-state { margin-top: 20px; }
++.admin-empty-state h2 { margin: 0 0 8px; font-size: 17px; }
++.admin-empty-state p { margin: 0 0 18px; color: var(--color-muted); font-size: 11px; }
++.service-empty-state { padding: 26px; border: 1px solid var(--color-border); border-radius: 9px; background: rgba(16,34,41,.65); }
++.service-empty-state h3 { margin: 0 0 8px; color: var(--color-text); font-size: 17px; }
++.service-empty-state p { margin: 0 0 15px; color: var(--color-muted); font-size: 11px; }
++.service-price-note { color: var(--color-accent-soft) !important; font-weight: 700; }
++
++@media (max-width: 1000px) {
++  .admin-stat-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
++  .admin-quick-links { grid-template-columns: 1fr; }
++  .admin-category-layout { grid-template-columns: 1fr; }
++}
++
++@media (max-width: 700px) {
++  .admin-shell { display: block; }
++  .admin-sidebar { position: relative; height: auto; padding: 15px 18px; border-right: 0; border-bottom: 1px solid var(--color-border); }
++  .admin-brand { padding: 0 0 14px; }
++  .admin-sidebar-label { display: none; }
++  .admin-sidebar-nav { flex-direction: row; overflow-x: auto; padding-bottom: 11px; }
++  .admin-sidebar-nav a { flex: 0 0 auto; padding: 9px 10px; font-size: 10px; }
++  .admin-sidebar-bottom { padding-top: 11px; }
++  .admin-main { padding: 28px 17px 50px; }
++  .admin-page-header { align-items: flex-start; flex-direction: column; gap: 15px; }
++  .admin-header-action { align-self: stretch; }
++  .admin-stat-grid { gap: 8px; }
++  .admin-stat-card { min-height: 110px; padding: 13px; }
++  .admin-stat-card>strong { font-size: 26px; }
++  .admin-panel,.admin-form-section { padding: 16px; }
++  .admin-form-grid,.admin-check-grid { grid-template-columns: 1fr; }
++  .admin-field-wide { grid-column: auto; }
++  .admin-filter-bar { align-items: stretch; flex-wrap: wrap; }
++  .admin-search-field { flex-basis: 100%; }
++  .admin-filter-bar select { flex: 1; width: auto; }
++  .admin-category-row { align-items: flex-start; flex-direction: column; }
++  .admin-auth-card { padding: 29px 22px; }
++}
++
++.service-detail-image { overflow: hidden; margin-bottom: 28px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
++.service-detail-image img { width: 100%; max-height: 360px; object-fit: cover; }
++
++.service-directory-section + .service-directory-section { margin-top: 72px; padding-top: 55px; border-top: 1px solid var(--color-border); }
++.service-directory-section .page-section-heading { margin-bottom: 28px; }
++.service-directory-section .page-section-heading .text-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 13px; color: var(--color-accent); font-size: 11px; }
++.service-category-footer { margin-top: 30px; }
++.service-category-footer .text-link { display: inline-flex; align-items: center; gap: 7px; color: var(--color-accent); font-size: 11px; }
+diff --git a/src/auth.ts b/src/auth.ts
+new file mode 100644
+index 0000000..7a9d4f5
+--- /dev/null
++++ b/src/auth.ts
+@@ -0,0 +1,57 @@
++import NextAuth from "next-auth";
++import Credentials from "next-auth/providers/credentials";
++import { compare } from "bcryptjs";
++import { z } from "zod";
++import { prisma } from "@/lib/prisma";
++
++const credentialsSchema = z.object({
++  email: z.string().trim().email().max(254),
++  password: z.string().min(1).max(200),
++});
++
++export const { handlers, auth, signIn, signOut } = NextAuth({
++  secret: process.env.AUTH_SECRET,
++  trustHost: true,
++  session: { strategy: "jwt", maxAge: 60 * 60 * 8 },
++  pages: { signIn: "/admin/login" },
++  providers: [
++    Credentials({
++      credentials: {
++        email: { label: "Email address", type: "email" },
++        password: { label: "Password", type: "password" },
++      },
++      async authorize(rawCredentials) {
++        const parsed = credentialsSchema.safeParse(rawCredentials);
++        if (!parsed.success) return null;
++
++        const admin = await prisma.adminUser.findUnique({
++          where: { email: parsed.data.email.toLowerCase() },
++        });
++        if (!admin || !admin.active) return null;
++
++        const passwordMatches = await compare(parsed.data.password, admin.passwordHash);
++        if (!passwordMatches) return null;
++
++        return {
++          id: admin.id,
++          name: admin.name,
++          email: admin.email,
++          role: admin.role,
++        };
++      },
++    }),
++  ],
++  callbacks: {
++    async jwt({ token, user }) {
++      if (user) token.role = user.role;
++      return token;
++    },
++    async session({ session, token }) {
++      if (session.user && token.sub) {
++        session.user.id = token.sub;
++        session.user.role = token.role ?? "STAFF";
++      }
++      return session;
++    },
++  },
++});
+diff --git a/src/components/admin/confirm-action.tsx b/src/components/admin/confirm-action.tsx
+new file mode 100644
+index 0000000..4775ee1
+--- /dev/null
++++ b/src/components/admin/confirm-action.tsx
+@@ -0,0 +1,10 @@
++"use client";
++
++import type { ReactNode } from "react";
++
++export function ConfirmAction({ action, id, children, className }: { action: (formData: FormData) => void | Promise<void>; id: string; children: ReactNode; className?: string }) {
++  return <form action={action} onSubmit={(event) => { if (!window.confirm("Archive this service? It will be removed from the public website, but its record will be kept.")) event.preventDefault(); }}>
++    <input type="hidden" name="id" value={id} />
++    <button className={className ?? "admin-text-button admin-danger-text"} type="submit">{children}</button>
++  </form>;
++}
+diff --git a/src/components/admin/login-form.tsx b/src/components/admin/login-form.tsx
+new file mode 100644
+index 0000000..220b1b5
+--- /dev/null
++++ b/src/components/admin/login-form.tsx
+@@ -0,0 +1,51 @@
++"use client";
++
++import { useState, type FormEvent } from "react";
++import { signIn } from "next-auth/react";
++import { useRouter } from "next/navigation";
++import { ArrowRight, LockKeyhole } from "lucide-react";
++
++export function LoginForm() {
++  const router = useRouter();
++  const [email, setEmail] = useState("");
++  const [password, setPassword] = useState("");
++  const [error, setError] = useState("");
++  const [submitting, setSubmitting] = useState(false);
++
++  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
++    event.preventDefault();
++    setError("");
++    setSubmitting(true);
++    try {
++      const result = await signIn("credentials", {
++        email,
++        password,
++        redirect: false,
++        redirectTo: "/admin",
++      });
++      if (!result || result.error) {
++        setError("The email address or password is incorrect, or this account is inactive.");
++        return;
++      }
++      router.replace("/admin");
++      router.refresh();
++    } catch {
++      setError("We could not sign you in. Please try again.");
++    } finally {
++      setSubmitting(false);
++    }
++  }
++
++  return (
++    <form className="admin-login-form" onSubmit={handleSubmit}>
++      <label htmlFor="admin-email">Email address</label>
++      <input id="admin-email" type="email" autoComplete="username" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} />
++      <label htmlFor="admin-password">Password</label>
++      <input id="admin-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
++      {error ? <p className="admin-form-error" role="alert">{error}</p> : null}
++      <button className="admin-primary-button" type="submit" disabled={submitting}>
++        <LockKeyhole size={16} /> {submitting ? "Signing in…" : "Sign in securely"} <ArrowRight size={16} />
++      </button>
++    </form>
++  );
++}
+diff --git a/src/components/admin/service-form.tsx b/src/components/admin/service-form.tsx
+new file mode 100644
+index 0000000..87ae219
+--- /dev/null
++++ b/src/components/admin/service-form.tsx
+@@ -0,0 +1,49 @@
++import type { Service, ServiceCategory } from "@prisma/client";
++import { createService, updateService } from "@/app/admin/(dashboard)/services/actions";
++
++type ServiceFormProps = {
++  service?: Service;
++  categories: ServiceCategory[];
++  error?: string;
++};
++
++export function ServiceForm({ service, categories, error }: ServiceFormProps) {
++  const action = service ? updateService : createService;
++  return <form action={action} className="admin-form-panel">
++    {service ? <input type="hidden" name="id" value={service.id} /> : null}
++    {error ? <p className="admin-alert" role="alert">{error === "slug" ? "That URL slug is already in use. Choose a different one." : error === "category" ? "Choose an available service category." : "Please check the required fields and try again."}</p> : null}
++    <div className="admin-form-section"><div><span className="admin-eyebrow">SERVICE DETAILS</span><h2>Basic information</h2></div>
++      <div className="admin-form-grid">
++        <label className="admin-field admin-field-wide">Service name <input name="name" required minLength={2} maxLength={120} defaultValue={service?.name ?? ""} placeholder="e.g. Website Development" /></label>
++        <label className="admin-field">URL slug <input name="slug" maxLength={140} defaultValue={service?.slug ?? ""} placeholder="Automatically generated if blank" /></label>
++        <label className="admin-field">Service category <select name="categoryId" required defaultValue={service?.categoryId ?? ""}><option value="" disabled>Select a category</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}{category.active ? "" : " (inactive)"}</option>)}</select></label>
++        <label className="admin-field admin-field-wide">Short description <textarea name="shortDescription" required minLength={10} maxLength={240} rows={2} defaultValue={service?.shortDescription ?? ""} placeholder="A concise description for service cards." /></label>
++        <label className="admin-field admin-field-wide">Full description <textarea name="description" required minLength={20} maxLength={6000} rows={6} defaultValue={service?.description ?? ""} placeholder="Explain the service, what it includes and what customers can expect." /></label>
++      </div>
++    </div>
++    <div className="admin-form-section"><div><span className="admin-eyebrow">PRESENTATION</span><h2>Appearance and display</h2></div>
++      <div className="admin-form-grid">
++        <label className="admin-field">Service icon <select name="icon" defaultValue={service?.icon ?? "BriefcaseBusiness"}>{["BriefcaseBusiness", "Headphones", "Wrench", "Laptop", "Smartphone", "MonitorCog", "Network", "Globe2", "Code2", "Workflow", "Mail", "Users", "Database", "BadgeHelp", "Building2", "FileText", "ClipboardList", "ShieldCheck", "Palette"].map((icon) => <option key={icon} value={icon}>{icon}</option>)}</select></label>
++        <label className="admin-field">Service image URL <input name="heroImageUrl" type="url" defaultValue={service?.heroImageUrl ?? ""} placeholder="https://…" /></label>
++        <label className="admin-field">Display order <input name="sortOrder" type="number" min="0" max="9999" step="1" defaultValue={service?.sortOrder ?? 0} /></label>
++        <label className="admin-field">Starting price (ZAR) <input name="startingPrice" type="number" min="0" step="0.01" defaultValue={service?.startingPrice?.toString() ?? ""} placeholder="Leave blank if quote-based" /></label>
++        <label className="admin-field">Price label <input name="priceLabel" maxLength={80} defaultValue={service?.priceLabel ?? ""} placeholder="e.g. From R500" /></label>
++      </div>
++      <p className="admin-form-hint">The image field accepts an existing image URL. Secure image uploads and managed media storage will be handled as a separate storage capability; this release does not write uploaded files to the server.</p>
++    </div>
++    <div className="admin-form-section"><div><span className="admin-eyebrow">PUBLICATION</span><h2>Publishing and visibility</h2><p>Publication and visibility are separate controls. Both must be enabled for customers to see this service.</p></div>
++      <div className="admin-form-grid">
++        <label className="admin-field">Publication status <select name="status" defaultValue={service?.status ?? "DRAFT"}><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="ARCHIVED">Archived</option></select></label>
++        <label className="admin-field">SEO title <input name="seoTitle" maxLength={160} defaultValue={service?.seoTitle ?? ""} placeholder="Optional search title" /></label>
++        <label className="admin-field admin-field-wide">SEO description <textarea name="seoDescription" rows={2} maxLength={320} defaultValue={service?.seoDescription ?? ""} placeholder="Optional search description" /></label>
++      </div>
++      <div className="admin-check-grid">
++        <label><input type="checkbox" name="isVisible" defaultChecked={service?.isVisible ?? false} /> Visible on the public website</label>
++        <label><input type="checkbox" name="featured" defaultChecked={service?.featured ?? false} /> Feature this service</label>
++        <label><input type="checkbox" name="requiresQuote" defaultChecked={service?.requiresQuote ?? true} /> Requires a quotation</label>
++        <label><input type="checkbox" name="acceptsApplications" defaultChecked={service?.acceptsApplications ?? false} /> Accepts direct applications</label>
++      </div>
++    </div>
++    <div className="admin-form-actions"><a className="admin-secondary-button" href="/admin/services">Cancel</a><button className="admin-primary-button" type="submit">{service ? "Save service changes" : "Create service"}</button></div>
++  </form>;
++}
+diff --git a/src/components/layout/site-header.tsx b/src/components/layout/site-header.tsx
+index 632eed9..2ae3483 100644
+--- a/src/components/layout/site-header.tsx
++++ b/src/components/layout/site-header.tsx
+@@ -1,58 +1,59 @@
+-"use client";
+-
+-import Link from "next/link";
+-import { useState } from "react";
+-import { ArrowUpRight, Menu, X } from "lucide-react";
+-import { ArkylMark } from "@/components/site/arkyl-mark";
+-
+-const links = [
+-  { label: "Home", href: "/" },
+-  { label: "Technology & IT", href: "/technology-it" },
+-  { label: "Business Services", href: "/business-services" },
+-  { label: "Shop", href: "/shop" },
+-  { label: "About", href: "/about" },
+-];
+-
+-export function SiteHeader() {
+-  const [menuOpen, setMenuOpen] = useState(false);
+-
+-  return (
+-    <header className="site-header">
+-      <div className="header-inner">
+-        <Link className="brand-lockup" href="/" aria-label="Arkyl Ventures home" onClick={() => setMenuOpen(false)}>
+-          <ArkylMark />
+-          <span className="brand-name">ARKYL <strong>VENTURES</strong></span>
+-        </Link>
+-
+-        <nav className="desktop-nav" aria-label="Main navigation">
+-          {links.map((link) => (
+-            <Link href={link.href} key={link.label}>{link.label}</Link>
+-          ))}
+-        </nav>
+-
+-        <Link className="header-cta" href="/contact">
+-          Get started <ArrowUpRight size={16} strokeWidth={1.8} />
+-        </Link>
+-
+-        <button
+-          className="mobile-menu-toggle"
+-          type="button"
+-          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+-          aria-expanded={menuOpen}
+-          onClick={() => setMenuOpen((open) => !open)}
+-        >
+-          {menuOpen ? <X size={21} /> : <Menu size={21} />}
+-        </button>
+-      </div>
+-
+-      {menuOpen && (
+-        <nav className="mobile-nav" aria-label="Mobile navigation">
+-          {links.map((link) => (
+-            <Link href={link.href} key={link.label} onClick={() => setMenuOpen(false)}>{link.label}</Link>
+-          ))}
+-          <Link href="/contact" onClick={() => setMenuOpen(false)}>Get started <ArrowUpRight size={16} /></Link>
+-        </nav>
+-      )}
+-    </header>
+-  );
+-}
++"use client";
++
++import Link from "next/link";
++import { useState } from "react";
++import { ArrowUpRight, Menu, X } from "lucide-react";
++import { ArkylMark } from "@/components/site/arkyl-mark";
++
++const links = [
++  { label: "Home", href: "/" },
++  { label: "Technology & IT", href: "/technology-it" },
++  { label: "Business Services", href: "/business-services" },
++  { label: "All Services", href: "/services" },
++  { label: "Shop", href: "/shop" },
++  { label: "About", href: "/about" },
++];
++
++export function SiteHeader() {
++  const [menuOpen, setMenuOpen] = useState(false);
++
++  return (
++    <header className="site-header">
++      <div className="header-inner">
++        <Link className="brand-lockup" href="/" aria-label="Arkyl Ventures home" onClick={() => setMenuOpen(false)}>
++          <ArkylMark />
++          <span className="brand-name">ARKYL <strong>VENTURES</strong></span>
++        </Link>
++
++        <nav className="desktop-nav" aria-label="Main navigation">
++          {links.map((link) => (
++            <Link href={link.href} key={link.label}>{link.label}</Link>
++          ))}
++        </nav>
++
++        <Link className="header-cta" href="/contact">
++          Get started <ArrowUpRight size={16} strokeWidth={1.8} />
++        </Link>
++
++        <button
++          className="mobile-menu-toggle"
++          type="button"
++          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
++          aria-expanded={menuOpen}
++          onClick={() => setMenuOpen((open) => !open)}
++        >
++          {menuOpen ? <X size={21} /> : <Menu size={21} />}
++        </button>
++      </div>
++
++      {menuOpen && (
++        <nav className="mobile-nav" aria-label="Mobile navigation">
++          {links.map((link) => (
++            <Link href={link.href} key={link.label} onClick={() => setMenuOpen(false)}>{link.label}</Link>
++          ))}
++          <Link href="/contact" onClick={() => setMenuOpen(false)}>Get started <ArrowUpRight size={16} /></Link>
++        </nav>
++      )}
++    </header>
++  );
++}
+diff --git a/src/components/site/service-icon.tsx b/src/components/site/service-icon.tsx
+new file mode 100644
+index 0000000..58d09f5
+--- /dev/null
++++ b/src/components/site/service-icon.tsx
+@@ -0,0 +1,37 @@
++import {
++  BadgeHelp,
++  BriefcaseBusiness,
++  Building2,
++  ClipboardList,
++  Code2,
++  Database,
++  FileText,
++  Globe2,
++  Headphones,
++  Laptop,
++  Mail,
++  MonitorCog,
++  Network,
++  Palette,
++  ShieldCheck,
++  Smartphone,
++  Users,
++  Workflow,
++  Wrench,
++  type LucideIcon,
++} from "lucide-react";
++
++const serviceIcons: Record<string, LucideIcon> = {
++  BadgeHelp, BriefcaseBusiness, Building2, ClipboardList, Code2, Database,
++  FileText, Globe2, Headphones, Laptop, Mail, MonitorCog, Network, Palette,
++  ShieldCheck, Smartphone, Users, Workflow, Wrench,
++};
++
++export function ServiceIcon({ name, size = 20 }: { name: string; size?: number }) {
++  const Icon = serviceIcons[name] ?? BriefcaseBusiness;
++  return <Icon size={size} aria-hidden="true" />;
++}
++
++export function getServiceIcon(name: string): LucideIcon {
++  return serviceIcons[name] ?? BriefcaseBusiness;
++}
+diff --git a/src/lib/admin-auth.ts b/src/lib/admin-auth.ts
+new file mode 100644
+index 0000000..d80c8dd
+--- /dev/null
++++ b/src/lib/admin-auth.ts
+@@ -0,0 +1,21 @@
++import { redirect } from "next/navigation";
++import type { UserRole } from "@prisma/client";
++import { auth } from "@/auth";
++import { prisma } from "@/lib/prisma";
++
++export async function getCurrentAdmin() {
++  const session = await auth();
++  if (!session?.user?.id) return null;
++
++  return prisma.adminUser.findFirst({
++    where: { id: session.user.id, active: true },
++    select: { id: true, name: true, email: true, role: true },
++  });
++}
++
++export async function requireAdmin(allowedRoles?: UserRole[]) {
++  const admin = await getCurrentAdmin();
++  if (!admin) redirect("/admin/login");
++  if (allowedRoles && !allowedRoles.includes(admin.role)) redirect("/admin?access=denied");
++  return admin;
++}
+diff --git a/src/types/next-auth.d.ts b/src/types/next-auth.d.ts
+new file mode 100644
+index 0000000..daf66f1
+--- /dev/null
++++ b/src/types/next-auth.d.ts
+@@ -0,0 +1,21 @@
++import type { DefaultSession } from "next-auth";
++import type { UserRole } from "@prisma/client";
++
++declare module "next-auth" {
++  interface Session {
++    user: {
++      id: string;
++      role: UserRole;
++    } & DefaultSession["user"];
++  }
++
++  interface User {
++    role: UserRole;
++  }
++}
++
++declare module "next-auth/jwt" {
++  interface JWT {
++    role?: UserRole;
++  }
++}

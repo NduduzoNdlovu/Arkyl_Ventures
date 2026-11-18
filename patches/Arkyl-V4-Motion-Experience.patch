@@ -1,0 +1,1156 @@
+diff --git a/README.md b/README.md
+index 5afb87f..75f4395 100644
+--- a/README.md
++++ b/README.md
+@@ -36,3 +36,17 @@ The service-management phase is implemented, but the overall platform is not yet
+ V3 adds a separate database-backed service catalogue (`ServiceCategory` and `Service`) without changing the existing product `Category` model. The public Technology & IT, Business Services, homepage and individual service pages now read published and visible services from PostgreSQL.
+ 
+ The focused administration area is available at `/admin`. It includes credentials-based administrator sign-in, service creation/editing, publication and visibility controls, safe archiving, service category creation/activation and audit-log entries. The first administrator is created using the one-time bootstrap script described in `patches/Arkyl-V3-PATCH-INSTRUCTIONS.md`.
++
++
++## V4 — Motion & Experience System
++
++V4 introduces a reusable Motion-powered interaction layer while retaining the existing Arkyl brand, colour palette, typography, navigation, page layouts, business logic and database structure.
++
++- Global, restrained route transitions across public and administrator pages.
++- Reusable scroll-reveal component with reduced-motion support.
++- Automatically moving technology and published-service marquees below the homepage hero. Marquees pause on hover/focus and become static for reduced-motion preferences.
++- A layered, automatically rotating hero capability showcase populated only from published, visible services in active categories. It does not invent portfolio case studies or change the portfolio database.
++- Responsive styling for desktop, tablet and mobile.
++- No Prisma schema changes or database migrations.
++
++Install the Motion dependency with `npm install` after applying the V4 patch so npm updates the existing lockfile.
+diff --git a/package.json b/package.json
+index 38b7e94..98c5b71 100644
+--- a/package.json
++++ b/package.json
+@@ -21,7 +21,8 @@
+     "next-auth": "^5.0.0-beta.25",
+     "react": "^19.1.0",
+     "react-dom": "^19.1.0",
+-    "zod": "^4.1.0"
++    "zod": "^4.1.0",
++    "motion": "^12.23.24"
+   },
+   "devDependencies": {
+     "@tailwindcss/postcss": "^4.1.0",
+diff --git a/patches/Arkyl-V4-PATCH-INSTRUCTIONS.md b/patches/Arkyl-V4-PATCH-INSTRUCTIONS.md
+new file mode 100644
+index 0000000..075ad0a
+--- /dev/null
++++ b/patches/Arkyl-V4-PATCH-INSTRUCTIONS.md
+@@ -0,0 +1,103 @@
++# Arkyl Ventures — V4 Patch Installation
++
++## Release
++
++**V4 — Motion & Experience System**
++
++This patch is built against the supplied `Arkyl Ventures-v3(2).zip` project. It assumes V1, V2 and V3 are already present. Do not apply it to an earlier project snapshot.
++
++## Design direction
++
++V4 follows the agreed hybrid direction: premium, experimental and subtly futuristic, with a high level of motion that does not compromise usability.
++
++The existing visual identity is retained:
++- Dark teal background and existing surface colours.
++- Existing mint accent and typography.
++- Existing logo, navigation, footer, page layouts and content.
++- Existing services, authentication, Prisma models and database behaviour.
++
++## Included
++
++- Motion for React as the reusable animation engine.
++- Global route transitions across public and administrator routes.
++- A reusable `ScrollReveal` component with reduced-motion support.
++- An automatically scrolling technology/skills marquee and a published-services marquee directly below the homepage hero.
++- A layered hero showcase that automatically selects and rotates through published, visible services from active categories.
++- The existing robot illustration remains as a subdued atmospheric background behind the cards.
++- Cards link to their actual service pages. The active card pauses its rotation while hovered or keyboard-focused.
++- Responsive layouts and reduced-motion handling.
++- No database schema changes and no migrations.
++
++## Important portfolio note
++
++The V3 database does not contain a Project/Portfolio model, and the current portfolio page intentionally does not claim that sample projects are completed client work. Therefore, the V4 hero cards use real published services and present them as capability previews. They are not labelled as completed client projects. A proper project-management/portfolio module can later populate the same visual treatment with approved case studies.
++
++## 1. Back up V3
++
++Open Command Prompt in your existing Arkyl project directory.
++
++If the project uses Git:
++
++```cmd
++git status
++git add .
++git commit -m "Backup before Arkyl V4"
++```
++
++Otherwise, create a complete copy of the project folder.
++
++## 2. Check and apply the patch
++
++Copy `Arkyl-V4-Motion-Experience.patch` into the project's `patches` folder, then run:
++
++```cmd
++git apply --check .\patches\Arkyl-V4-Motion-Experience.patch
++```
++
++Only if the check succeeds, apply it:
++
++```cmd
++git apply .\patches\Arkyl-V4-Motion-Experience.patch
++```
++
++Do not use `git apply --reject` or force a partial application.
++
++## 3. Install the Motion dependency
++
++The patch adds Motion to `package.json`. Run:
++
++```cmd
++npm install
++```
++
++This installs Motion and synchronises the existing `package-lock.json`. Use `npm install`, not `npm ci`, for this first install because the lockfile is refreshed by npm.
++
++## 4. Verify the application
++
++No Prisma migration or database reset is required.
++
++Run:
++
++```cmd
++npx prisma generate
++npx tsc --noEmit
++npm run build
++```
++
++Then start the application:
++
++```cmd
++npm run dev
++```
++
++Review the homepage on desktop and mobile, then test:
++- Hero cards rotate automatically and link to their actual service pages.
++- The technology and services marquees scroll continuously.
++- Marquees pause when hovered or keyboard-focused.
++- Navigation and admin pages remain usable.
++- Forms, links and buttons still work.
++- Reduced-motion preference disables continuous marquee movement and non-essential motion.
++
++## 5. Rollback
++
++If you use Git, revert the V4 commit or restore the backup. V4 does not modify the database, so there is no database rollback or migration reversal.
+diff --git a/src/app/(site)/page.tsx b/src/app/(site)/page.tsx
+index 654fc2c..6899eea 100644
+--- a/src/app/(site)/page.tsx
++++ b/src/app/(site)/page.tsx
+@@ -1,8 +1,19 @@
+ import Image from "next/image";
+ import Link from "next/link";
+-import { ArrowRight, ArrowUpRight, CheckCircle2, Cpu, ShoppingBag, Sparkles, BriefcaseBusiness, ShieldCheck } from "lucide-react";
++import {
++  ArrowRight,
++  ArrowUpRight,
++  CheckCircle2,
++  ShoppingBag,
++  Sparkles,
++  BriefcaseBusiness,
++  ShieldCheck,
++} from "lucide-react";
+ import { prisma } from "@/lib/prisma";
+ import { ServiceIcon } from "@/components/site/service-icon";
++import { HeroShowcase } from "@/components/site/hero-showcase";
++import { InfiniteMarquee } from "@/components/site/infinite-marquee";
++import { ScrollReveal } from "@/components/motion/scroll-reveal";
+ 
+ const benefits = [
+   "Solutions shaped around your requirements",
+@@ -10,10 +21,22 @@ const benefits = [
+   "Practical support for individuals and businesses",
+ ];
+ 
++const technologyStack = [
++  { label: "TypeScript", mark: "TS" },
++  { label: "JavaScript", mark: "JS" },
++  { label: "C#", mark: "C#" },
++  { label: "PHP", mark: "PHP" },
++  { label: "SQL", mark: "SQL" },
++  { label: "HTML5", mark: "5" },
++  { label: "CSS3", mark: "CSS" },
++  { label: "Python", mark: "PY" },
++  { label: "Java", mark: "JV" },
++];
++
+ export const dynamic = "force-dynamic";
+ 
+ export default async function HomePage() {
+-  const [technologyServices, businessServices] = await Promise.all([
++  const [technologyServices, businessServices, showcaseServices] = await Promise.all([
+     prisma.service.findMany({
+       where: { status: "PUBLISHED", isVisible: true, deletedAt: null, category: { slug: "technology-it", active: true } },
+       orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
+@@ -24,11 +47,29 @@ export default async function HomePage() {
+       orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
+       take: 4,
+     }),
++    prisma.service.findMany({
++      where: { status: "PUBLISHED", isVisible: true, deletedAt: null, category: { active: true } },
++      select: {
++        id: true,
++        name: true,
++        slug: true,
++        shortDescription: true,
++        icon: true,
++        category: { select: { name: true } },
++      },
++      orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
++    }),
+   ]);
++
++  const serviceMarqueeItems = showcaseServices.map((service) => ({
++    label: service.name,
++    mark: service.name.slice(0, 2).toUpperCase(),
++  }));
++
+   return (
+     <>
+       <section className="hero-section section-container" aria-labelledby="hero-title">
+-        <div className="hero-copy">
++        <ScrollReveal className="hero-copy">
+           <div className="eyebrow"><span className="eyebrow-line" /> TECHNOLOGY. BUSINESS. POSSIBILITIES.</div>
+           <h1 id="hero-title">Move your ideas <span>forward.</span></h1>
+           <p className="hero-description">Technology and business solutions designed to help you work smarter, grow confidently and make more possible.</p>
+@@ -37,73 +78,108 @@ export default async function HomePage() {
+             <Link className="button button-quiet" href="/about">Discover Arkyl <ArrowRight size={16} /></Link>
+           </div>
+           <div className="hero-proof"><span className="proof-dot" /> Practical solutions. Thoughtful service. Room to grow.</div>
+-        </div>
++        </ScrollReveal>
+ 
+-        <div className="hero-visual" aria-label="Arkyl Ventures human-inspired technology illustration">
++        <div className="hero-visual" aria-label="Arkyl Ventures featured capabilities">
+           <div className="hero-orbit hero-orbit-one" />
+           <div className="hero-orbit hero-orbit-two" />
+           <div className="hero-image-wrap">
+-            <Image src="/images/arkyl.png" alt="A futuristic human-shaped robot representing technology and innovation" fill priority sizes="(max-width: 900px) 80vw, 560px" className="hero-robot" />
+-          </div>
+-          <div className="hero-glass-card glass-card glass-card-top">
+-            <span className="glass-icon"><Cpu size={17} /></span>
+-            <span><strong>Technology that works</strong><small>Built around real needs</small></span>
+-          </div>
+-          <div className="hero-glass-card glass-card glass-card-bottom">
+-            <span className="glass-icon"><Sparkles size={17} /></span>
+-            <span><strong>Possibilities, unlocked</strong><small>From ideas to outcomes</small></span>
++            <Image src="/images/arkyl.png" alt="" fill priority sizes="(max-width: 900px) 80vw, 560px" className="hero-robot" aria-hidden="true" />
+           </div>
++          <HeroShowcase items={showcaseServices} />
+           <div className="hero-side-note">WHERE POSSIBILITIES BEGIN</div>
+         </div>
+ 
+         <div className="hero-bottom-note"><span>01 / 04</span><span>Technology & business solutions</span><span className="hero-bottom-rule" /></div>
+       </section>
+ 
++      <section className="arkyl-experience-strip section-container" aria-label="Arkyl technologies and services">
++        <InfiniteMarquee label="TECHNOLOGIES" items={technologyStack} />
++        {serviceMarqueeItems.length > 0 ? (
++          <InfiniteMarquee label="SERVICES" items={serviceMarqueeItems} reverse />
++        ) : null}
++      </section>
++
+       <section className="intro-strip section-container" aria-label="Company introduction">
+         <p>One partner for <strong>technology, business support</strong> and the tools that help you move forward.</p>
+         <Link href="/about" className="text-link">Get to know us <ArrowUpRight size={16} /></Link>
+       </section>
+ 
+       <section className="content-section section-container" id="technology" aria-labelledby="technology-title">
+-        <div className="section-heading-row">
++        <ScrollReveal className="section-heading-row">
+           <div><span className="section-kicker">01 / TECHNOLOGY & IT</span><h2 id="technology-title">Make technology <span>work for you.</span></h2></div>
+           <p>From everyday technical support to custom digital products, we help you get more from the technology you rely on.</p>
+-        </div>
+-        <div className="service-grid">
++        </ScrollReveal>
++        <ScrollReveal className="service-grid" delay={0.08}>
+           {technologyServices.map((service) => <article className="service-card" key={service.id}><span className="service-icon"><ServiceIcon name={service.icon} size={21} /></span><h3>{service.name}</h3><p>{service.shortDescription}</p><Link href={`/services/${service.slug}`} aria-label={`Explore ${service.name}`}><ArrowUpRight size={17} /></Link></article>)}
+           {technologyServices.length === 0 ? <p className="service-empty-state">Technology services will be listed here as they become available.</p> : null}
+-        </div>
++        </ScrollReveal>
+         <div className="section-link-row"><span>Technology solutions for home and business</span><Link className="text-link" href="/technology-it">Explore Technology & IT <ArrowUpRight size={16} /></Link></div>
+       </section>
+ 
+       <section className="business-section" id="business-services" aria-labelledby="business-title">
+         <div className="business-inner section-container">
+-          <div className="business-copy"><span className="section-kicker">02 / BUSINESS SERVICES</span><h2 id="business-title">Build a stronger <span>business foundation.</span></h2><p>Getting a business off the ground or keeping it moving takes time, structure and the right support. We help make those next steps clearer.</p><Link className="button button-outline" href="/business-services">Explore business services <ArrowUpRight size={17} /></Link></div>
+-          <div className="business-list-card glass-card"><div className="business-list-heading"><BriefcaseBusiness size={19} /><span>Ways we can support you</span></div>{businessServices.map((service) => <Link className="business-list-item" key={service.id} href={`/services/${service.slug}`}><CheckCircle2 size={17} /><span>{service.name}</span><ArrowUpRight size={15} /></Link>)}{businessServices.length === 0 ? <p className="business-disclaimer">Business services will be listed here as they become available.</p> : null}<p className="business-disclaimer">Service availability and scope are confirmed during your enquiry. Official registrations and approvals remain subject to the relevant authorities.</p></div>
++          <ScrollReveal className="business-copy">
++            <span className="section-kicker">02 / BUSINESS SERVICES</span>
++            <h2 id="business-title">Build a stronger <span>business foundation.</span></h2>
++            <p>Getting a business off the ground or keeping it moving takes time, structure and the right support. We help make those next steps clearer.</p>
++            <Link className="button button-outline" href="/business-services">Explore business services <ArrowUpRight size={17} /></Link>
++          </ScrollReveal>
++          <ScrollReveal className="business-list-card glass-card" delay={0.12}>
++            <div className="business-list-heading"><BriefcaseBusiness size={19} /><span>Ways we can support you</span></div>
++            {businessServices.map((service) => <Link className="business-list-item" key={service.id} href={`/services/${service.slug}`}><CheckCircle2 size={17} /><span>{service.name}</span><ArrowUpRight size={15} /></Link>)}
++            {businessServices.length === 0 ? <p className="business-disclaimer">Business services will be listed here as they become available.</p> : null}
++            <p className="business-disclaimer">Service availability and scope are confirmed during your enquiry. Official registrations and approvals remain subject to the relevant authorities.</p>
++          </ScrollReveal>
+         </div>
+       </section>
+ 
+       <section className="content-section section-container" id="shop" aria-labelledby="shop-title">
+-        <div className="section-heading-row"><div><span className="section-kicker">03 / THE ARKYL SHOP</span><h2 id="shop-title">Useful products. <span>Considered choices.</span></h2></div><p>Explore technology and everyday products selected to support how you work and live. Our catalogue will grow as new categories become available.</p></div>
+-        <div className="shop-feature-card"><div className="shop-feature-icon"><ShoppingBag size={28} /></div><div><span className="shop-label">COMING INTO FOCUS</span><h3>A smarter way to shop for the things you need.</h3><p>Browse product categories, compare options and find the right fit as our online store expands.</p></div><Link className="button button-primary" href="/shop">Explore the shop <ArrowUpRight size={17} /></Link></div>
++        <ScrollReveal className="section-heading-row">
++          <div><span className="section-kicker">03 / THE ARKYL SHOP</span><h2 id="shop-title">Useful products. <span>Considered choices.</span></h2></div>
++          <p>Explore technology and everyday products selected to support how you work and live. Our catalogue will grow as new categories become available.</p>
++        </ScrollReveal>
++        <ScrollReveal className="shop-feature-card" delay={0.08}>
++          <div className="shop-feature-icon"><ShoppingBag size={28} /></div>
++          <div><span className="shop-label">COMING INTO FOCUS</span><h3>A smarter way to shop for the things you need.</h3><p>Browse product categories, compare options and find the right fit as our online store expands.</p></div>
++          <Link className="button button-primary" href="/shop">Explore the shop <ArrowUpRight size={17} /></Link>
++        </ScrollReveal>
+       </section>
+ 
+       <section className="why-section section-container" aria-labelledby="why-title">
+         <div className="why-heading"><span className="section-kicker">04 / THE ARKYL APPROACH</span><h2 id="why-title">Good work starts with <span>understanding.</span></h2><p>We believe useful solutions begin by listening, understanding the challenge and choosing a practical way forward.</p></div>
+-        <div className="why-points">{benefits.map((benefit, index) => <div className="why-point" key={benefit}><span>0{index + 1}</span><p>{benefit}</p><ShieldCheck size={18} /></div>)}</div>
++        <ScrollReveal className="why-points" delay={0.1}>
++          {benefits.map((benefit, index) => <div className="why-point" key={benefit}><span>0{index + 1}</span><p>{benefit}</p><ShieldCheck size={18} /></div>)}
++        </ScrollReveal>
+       </section>
+ 
+       <section className="about-preview section-container" id="about" aria-labelledby="about-title">
+         <div className="about-preview-mark"><span>AV</span><i>ARKYL VENTURES</i></div>
+-        <div className="about-preview-copy"><span className="section-kicker">ABOUT ARKYL VENTURES</span><h2 id="about-title">A practical partner for <span>what comes next.</span></h2><p>Arkyl Ventures brings technology and business support together under one roof. Our focus is to understand what you need, make the options clear and help you take the next step with confidence.</p><Link className="text-link" href="/contact">Talk to our team <ArrowUpRight size={16} /></Link></div>
++        <ScrollReveal className="about-preview-copy">
++          <span className="section-kicker">ABOUT ARKYL VENTURES</span>
++          <h2 id="about-title">A practical partner for <span>what comes next.</span></h2>
++          <p>Arkyl Ventures brings technology and business support together under one roof. Our focus is to understand what you need, make the options clear and help you take the next step with confidence.</p>
++          <Link className="text-link" href="/contact">Talk to our team <ArrowUpRight size={16} /></Link>
++        </ScrollReveal>
+       </section>
+ 
+       <section className="portfolio-preview section-container" id="portfolio" aria-labelledby="portfolio-title">
+-        <div><span className="section-kicker">OUR WORK</span><h2 id="portfolio-title">Built around real <span>business needs.</span></h2><p>As projects are completed, this space will showcase selected websites, digital products and business solutions delivered by Arkyl Ventures.</p></div>
+-        <div className="portfolio-preview-note"><span className="portfolio-preview-number">01</span><div><strong>Project portfolio</strong><small>Selected work and case studies will be published here.</small></div><Sparkles size={20} /></div>
++        <ScrollReveal>
++          <div><span className="section-kicker">OUR WORK</span><h2 id="portfolio-title">Built around real <span>business needs.</span></h2><p>As projects are completed, this space will showcase selected websites, digital products and business solutions delivered by Arkyl Ventures.</p></div>
++        </ScrollReveal>
++        <ScrollReveal className="portfolio-preview-note" delay={0.12}>
++          <span className="portfolio-preview-number">01</span>
++          <div><strong>Project portfolio</strong><small>Selected work and case studies will be published here.</small></div>
++          <Sparkles size={20} />
++        </ScrollReveal>
+       </section>
+ 
+-      <section className="contact-band section-container" id="contact"><div><span className="section-kicker">HAVE SOMETHING IN MIND?</span><h2>Let&apos;s make the next step <span>possible.</span></h2><p>Tell us what you are working on. We&apos;ll help you explore the right way forward.</p></div><Link className="button button-primary" href="/contact">Start a conversation <ArrowUpRight size={17} /></Link></section>
++      <section className="contact-band section-container" id="contact">
++        <ScrollReveal>
++          <div><span className="section-kicker">HAVE SOMETHING IN MIND?</span><h2>Let&apos;s make the next step <span>possible.</span></h2><p>Tell us what you are working on. We&apos;ll help you explore the right way forward.</p></div>
++        </ScrollReveal>
++        <Link className="button button-primary" href="/contact">Start a conversation <ArrowUpRight size={17} /></Link>
++      </section>
+     </>
+   );
+ }
+diff --git a/src/app/admin/(dashboard)/layout.tsx b/src/app/admin/(dashboard)/layout.tsx
+index 4313d07..1e46b76 100644
+--- a/src/app/admin/(dashboard)/layout.tsx
++++ b/src/app/admin/(dashboard)/layout.tsx
+@@ -3,6 +3,7 @@ import Link from "next/link";
+ import { redirect } from "next/navigation";
+ import { signOut } from "@/auth";
+ import { getCurrentAdmin } from "@/lib/admin-auth";
++import { ScrollReveal } from "@/components/motion/scroll-reveal";
+ 
+ export default async function AdminLayout({ children }: { children: ReactNode }) {
+   const admin = await getCurrentAdmin();
+@@ -26,7 +27,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
+           </form>
+         </div>
+       </aside>
+-      <main className="admin-main">{children}</main>
++      <main className="admin-main"><ScrollReveal className="admin-motion-content">{children}</ScrollReveal></main>
+     </div>
+   );
+ }
+diff --git a/src/app/globals.css b/src/app/globals.css
+index 19f3434..9817a50 100644
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -2177,4 +2177,460 @@ img {
+     width: 36px;
+     height: 36px;
+   }
+-}
+\ No newline at end of file
++}
++
++
++/* V4 — Arkyl Motion & Experience System */
++.route-transition-root {
++  min-height: 100vh;
++}
++
++.arkyl-experience-strip {
++  display: grid;
++  gap: 13px;
++  padding-top: 8px;
++  padding-bottom: 31px;
++  margin-top: -9px;
++}
++
++.arkyl-marquee-row {
++  display: grid;
++  grid-template-columns: 138px minmax(0, 1fr);
++  align-items: center;
++  gap: 20px;
++  min-width: 0;
++}
++
++.arkyl-marquee-label {
++  color: var(--color-subtle);
++  font-size: 9px;
++  font-weight: 700;
++  letter-spacing: .17em;
++  white-space: nowrap;
++}
++
++.arkyl-marquee-viewport {
++  min-width: 0;
++  overflow: hidden;
++  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
++  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
++}
++
++.arkyl-marquee-track {
++  display: flex;
++  width: max-content;
++  animation: arkyl-marquee-scroll 42s linear infinite;
++  will-change: transform;
++}
++
++.arkyl-marquee-row.is-reverse .arkyl-marquee-track {
++  animation-direction: reverse;
++  animation-duration: 48s;
++}
++
++.arkyl-marquee-row:hover .arkyl-marquee-track,
++.arkyl-marquee-row:focus-within .arkyl-marquee-track {
++  animation-play-state: paused;
++}
++
++.arkyl-marquee-group {
++  display: flex;
++  flex: 0 0 auto;
++  align-items: center;
++  gap: 10px;
++  padding-right: 10px;
++}
++
++.arkyl-marquee-item {
++  display: inline-flex;
++  align-items: center;
++  gap: 9px;
++  min-height: 38px;
++  padding: 0 13px 0 9px;
++  border: 1px solid rgba(164, 184, 190, .13);
++  border-radius: 999px;
++  background: rgba(16, 34, 41, .48);
++  color: var(--color-text-soft);
++  font-size: 10px;
++  white-space: nowrap;
++}
++
++.arkyl-marquee-mark {
++  display: grid;
++  place-items: center;
++  min-width: 23px;
++  height: 23px;
++  padding-inline: 3px;
++  border: 1px solid rgba(80, 245, 189, .2);
++  border-radius: 7px;
++  background: rgba(80, 245, 189, .08);
++  color: var(--color-accent);
++  font-size: 8px;
++  font-weight: 700;
++  letter-spacing: -.03em;
++}
++
++@keyframes arkyl-marquee-scroll {
++  from { transform: translate3d(0, 0, 0); }
++  to { transform: translate3d(-50%, 0, 0); }
++}
++
++/* Hero capability cards sit in front of the existing illustration as a quiet, layered collage. */
++.hero-image-wrap {
++  opacity: .22;
++}
++
++.hero-showcase {
++  position: absolute;
++  z-index: 5;
++  inset: 6% -1% 5%;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  pointer-events: none;
++}
++
++.hero-showcase-heading {
++  position: absolute;
++  top: 2%;
++  right: 5%;
++  z-index: 8;
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  color: var(--color-text-soft);
++  font-size: 8px;
++  font-weight: 700;
++  letter-spacing: .16em;
++  white-space: nowrap;
++}
++
++.hero-showcase-heading small {
++  margin-left: 5px;
++  color: var(--color-subtle);
++  font-size: 7px;
++  font-weight: 500;
++}
++
++.showcase-live-dot,
++.showcase-auto-label i {
++  width: 6px;
++  height: 6px;
++  flex: 0 0 6px;
++  border-radius: 50%;
++  background: var(--color-accent);
++  box-shadow: 0 0 12px rgba(80, 245, 189, .7);
++}
++
++.hero-showcase-stack {
++  position: relative;
++  width: min(100%, 470px);
++  height: 350px;
++  perspective: 1100px;
++}
++
++.hero-showcase-card {
++  position: absolute;
++  top: 50%;
++  left: 50%;
++  width: min(80%, 365px);
++  min-height: 225px;
++  padding: 21px 22px 17px;
++  overflow: hidden;
++  border: 1px solid rgba(164, 184, 190, .22);
++  border-radius: 13px;
++  background:
++    radial-gradient(circle at 88% 8%, rgba(80, 245, 189, .11), transparent 38%),
++    linear-gradient(145deg, rgba(21, 45, 52, .97), rgba(7, 22, 28, .94));
++  box-shadow: 0 26px 75px rgba(0, 0, 0, .36);
++  transform-origin: center center;
++  pointer-events: none;
++  backdrop-filter: blur(18px);
++  -webkit-backdrop-filter: blur(18px);
++}
++
++.hero-showcase-card[data-position="0"] {
++  z-index: 5;
++  translate: -50% -48%;
++  rotate: -1deg;
++  border-color: rgba(80, 245, 189, .34);
++  pointer-events: auto;
++}
++
++.hero-showcase-card[data-position="1"] {
++  z-index: 3;
++  translate: -37% -65%;
++  rotate: 7deg;
++  filter: saturate(.72);
++}
++
++.hero-showcase-card[data-position="2"] {
++  z-index: 2;
++  translate: -64% -31%;
++  rotate: -8deg;
++  filter: saturate(.55);
++}
++
++.hero-showcase-card-link {
++  display: block;
++  color: inherit;
++  text-decoration: none;
++}
++
++.hero-showcase-card[data-position="0"] .hero-showcase-card-link {
++  pointer-events: auto;
++}
++
++.showcase-card-topline,
++.showcase-card-main,
++.showcase-card-bottomline {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++}
++
++.showcase-card-topline {
++  color: var(--color-accent);
++  font-size: 8px;
++  font-weight: 700;
++  letter-spacing: .16em;
++  text-transform: uppercase;
++}
++
++.showcase-card-index {
++  color: var(--color-subtle);
++  font-size: 8px;
++  letter-spacing: .12em;
++}
++
++.showcase-card-main {
++  margin-top: 21px;
++}
++
++.showcase-card-icon {
++  display: grid;
++  place-items: center;
++  width: 43px;
++  height: 43px;
++  border: 1px solid rgba(80, 245, 189, .2);
++  border-radius: 10px;
++  background: rgba(80, 245, 189, .09);
++  color: var(--color-accent);
++}
++
++.showcase-card-arrow {
++  display: grid;
++  place-items: center;
++  width: 31px;
++  height: 31px;
++  border: 1px solid var(--color-border);
++  border-radius: 50%;
++  color: var(--color-text-soft);
++  transition: transform .2s ease, color .2s ease, border-color .2s ease;
++}
++
++.hero-showcase-card[data-position="0"] a:hover .showcase-card-arrow {
++  transform: translate(2px, -2px);
++  border-color: var(--color-accent);
++  color: var(--color-accent);
++}
++
++.hero-showcase-card h3 {
++  margin-top: 16px;
++  color: var(--color-text);
++  font-size: 19px;
++  font-weight: 600;
++  letter-spacing: -.035em;
++  line-height: 1.2;
++}
++
++.hero-showcase-card p {
++  display: -webkit-box;
++  max-width: 290px;
++  margin-top: 8px;
++  overflow: hidden;
++  color: var(--color-muted);
++  font-size: 10px;
++  line-height: 1.65;
++  -webkit-box-orient: vertical;
++  -webkit-line-clamp: 2;
++}
++
++.showcase-card-bottomline {
++  gap: 15px;
++  margin-top: 16px;
++  color: var(--color-subtle);
++  font-size: 7px;
++  font-weight: 700;
++  letter-spacing: .15em;
++}
++
++.showcase-card-progress {
++  width: 62px;
++  height: 2px;
++  overflow: hidden;
++  background: rgba(164, 184, 190, .17);
++}
++
++.showcase-card-progress i {
++  display: block;
++  width: 48%;
++  height: 100%;
++  background: var(--color-accent);
++}
++
++.hero-showcase-footer {
++  position: absolute;
++  right: 5%;
++  bottom: 2%;
++  left: 5%;
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  color: var(--color-subtle);
++  font-size: 8px;
++  letter-spacing: .1em;
++}
++
++.showcase-auto-label {
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++  color: var(--color-muted);
++  font-size: 7px;
++  letter-spacing: .13em;
++}
++
++.showcase-auto-label i {
++  width: 5px;
++  height: 5px;
++  flex-basis: 5px;
++}
++
++.hero-showcase-empty {
++  position: relative;
++  z-index: 5;
++  display: flex;
++  align-items: center;
++  gap: 12px;
++  padding: 18px 22px;
++  border: 1px solid var(--color-border);
++  border-radius: 12px;
++  background: rgba(16, 34, 41, .78);
++  color: var(--color-text-soft);
++  font-size: 12px;
++}
++
++.hero-showcase-empty svg {
++  color: var(--color-accent);
++}
++
++@media (max-width: 1050px) {
++  .hero-showcase {
++    inset-inline: -4%;
++  }
++
++  .hero-showcase-stack {
++    max-width: 430px;
++  }
++
++  .hero-showcase-card {
++    width: min(82%, 350px);
++  }
++}
++
++@media (max-width: 760px) {
++  .arkyl-experience-strip {
++    gap: 10px;
++    padding-top: 2px;
++    padding-bottom: 25px;
++    margin-top: -15px;
++  }
++
++  .arkyl-marquee-row {
++    grid-template-columns: 1fr;
++    gap: 8px;
++  }
++
++  .arkyl-marquee-label {
++    padding-left: 3px;
++    font-size: 8px;
++  }
++
++  .hero-image-wrap {
++    opacity: .16;
++  }
++
++  .hero-showcase {
++    inset: 2% 0 1%;
++  }
++
++  .hero-showcase-heading {
++    top: 0;
++    right: 3%;
++    font-size: 7px;
++  }
++
++  .hero-showcase-stack {
++    height: 310px;
++  }
++
++  .hero-showcase-card {
++    width: min(84%, 340px);
++    min-height: 215px;
++    padding: 18px 19px 15px;
++  }
++
++  .hero-showcase-card h3 {
++    font-size: 17px;
++  }
++
++  .hero-showcase-footer {
++    right: 3%;
++    left: 3%;
++    font-size: 7px;
++  }
++
++  .hero-side-note {
++    display: none;
++  }
++}
++
++@media (max-width: 420px) {
++  .hero-showcase-stack {
++    height: 285px;
++  }
++
++  .hero-showcase-card {
++    width: 88%;
++    min-height: 205px;
++    padding: 16px 16px 14px;
++  }
++
++  .hero-showcase-card h3 {
++    font-size: 16px;
++  }
++
++  .hero-showcase-card p {
++    font-size: 9px;
++  }
++
++  .hero-showcase-heading small {
++    display: none;
++  }
++
++  .hero-showcase-footer {
++    bottom: 0;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .arkyl-marquee-track {
++    animation: none !important;
++    transform: none !important;
++  }
++
++  .hero-showcase-card {
++    transition: none !important;
++  }
++}
+diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index 57842c6..b119fed 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -1,5 +1,6 @@
+ import type { Metadata } from "next";
+ import "./globals.css";
++import { RouteTransition } from "@/components/motion/route-transition";
+ 
+ export const metadata: Metadata = {
+   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://arkylventures.co.za"),
+@@ -20,7 +21,7 @@ export const metadata: Metadata = {
+ export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+   return (
+     <html lang="en-ZA">
+-      <body>{children}</body>
++      <body><RouteTransition>{children}</RouteTransition></body>
+     </html>
+   );
+ }
+diff --git a/src/components/motion/route-transition.tsx b/src/components/motion/route-transition.tsx
+new file mode 100644
+index 0000000..ba81b35
+--- /dev/null
++++ b/src/components/motion/route-transition.tsx
+@@ -0,0 +1,25 @@
++"use client";
++
++import type { ReactNode } from "react";
++import { usePathname } from "next/navigation";
++import { AnimatePresence, motion, useReducedMotion } from "motion/react";
++
++export function RouteTransition({ children }: { children: ReactNode }) {
++  const pathname = usePathname();
++  const reduceMotion = useReducedMotion();
++
++  return (
++    <AnimatePresence mode="wait" initial={false}>
++      <motion.div
++        key={pathname}
++        className="route-transition-root"
++        initial={reduceMotion ? false : { opacity: 0 }}
++        animate={{ opacity: 1 }}
++        exit={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
++        transition={{ duration: reduceMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
++      >
++        {children}
++      </motion.div>
++    </AnimatePresence>
++  );
++}
+diff --git a/src/components/motion/scroll-reveal.tsx b/src/components/motion/scroll-reveal.tsx
+new file mode 100644
+index 0000000..8a30591
+--- /dev/null
++++ b/src/components/motion/scroll-reveal.tsx
+@@ -0,0 +1,39 @@
++"use client";
++
++import type { ReactNode } from "react";
++import { useRef } from "react";
++import { motion, useInView, useReducedMotion } from "motion/react";
++
++type ScrollRevealProps = {
++  children: ReactNode;
++  className?: string;
++  delay?: number;
++  amount?: number;
++};
++
++export function ScrollReveal({
++  children,
++  className,
++  delay = 0,
++  amount = 0.16,
++}: ScrollRevealProps) {
++  const ref = useRef<HTMLDivElement>(null);
++  const isInView = useInView(ref, { once: true, amount, initial: true });
++  const reduceMotion = useReducedMotion();
++
++  return (
++    <motion.div
++      ref={ref}
++      className={className}
++      initial={reduceMotion ? false : { opacity: 0, y: 22 }}
++      animate={isInView || reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 }}
++      transition={{
++        duration: reduceMotion ? 0 : 0.62,
++        delay: reduceMotion ? 0 : delay,
++        ease: [0.22, 1, 0.36, 1],
++      }}
++    >
++      {children}
++    </motion.div>
++  );
++}
+diff --git a/src/components/site/hero-showcase.tsx b/src/components/site/hero-showcase.tsx
+new file mode 100644
+index 0000000..2e458b4
+--- /dev/null
++++ b/src/components/site/hero-showcase.tsx
+@@ -0,0 +1,130 @@
++"use client";
++
++import { useEffect, useMemo, useState } from "react";
++import Link from "next/link";
++import { AnimatePresence, motion, useReducedMotion } from "motion/react";
++import { ArrowUpRight, Sparkles } from "lucide-react";
++import { ServiceIcon } from "@/components/site/service-icon";
++
++export type HeroShowcaseItem = {
++  id: string;
++  name: string;
++  slug: string;
++  shortDescription: string;
++  icon: string;
++  category: { name: string };
++};
++
++export function HeroShowcase({ items }: { items: HeroShowcaseItem[] }) {
++  const [activeIndex, setActiveIndex] = useState(0);
++  const [paused, setPaused] = useState(false);
++  const reduceMotion = useReducedMotion();
++
++  useEffect(() => {
++    if (items.length < 2 || reduceMotion || paused) return;
++
++    const intervalId = window.setInterval(() => {
++      setActiveIndex((current) => {
++        const next = Math.floor(Math.random() * (items.length - 1));
++        return next >= current ? next + 1 : next;
++      });
++    }, 5200);
++
++    return () => window.clearInterval(intervalId);
++  }, [items.length, paused, reduceMotion]);
++
++  const visibleItems = useMemo(() => {
++    if (!items.length) return [];
++    return [0, 1, 2]
++      .map((offset) => items[(activeIndex + offset) % items.length])
++      .filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index);
++  }, [activeIndex, items]);
++
++  if (!items.length) {
++    return (
++      <div className="hero-showcase-empty">
++        <Sparkles size={18} />
++        <span>New possibilities are taking shape.</span>
++      </div>
++    );
++  }
++
++  return (
++    <div
++      className="hero-showcase"
++      role="group"
++      aria-label="Featured Arkyl services"
++      onMouseEnter={() => setPaused(true)}
++      onMouseLeave={() => setPaused(false)}
++      onFocusCapture={() => setPaused(true)}
++      onBlurCapture={(event) => {
++        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
++      }}
++    >
++      <div className="hero-showcase-heading">
++        <span className="showcase-live-dot" />
++        <span>CAPABILITIES IN MOTION</span>
++        <small>SELECTED SERVICES</small>
++      </div>
++
++      <div className="hero-showcase-stack" aria-live="off">
++        <AnimatePresence initial={false}>
++          {visibleItems.map((item, position) => (
++            <motion.article
++              key={item.id}
++              className="hero-showcase-card"
++              data-position={position}
++              initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.96 }}
++              animate={{
++                opacity: position === 0 ? 1 : position === 1 ? 0.46 : 0.25,
++                y: 0,
++                scale: position === 0 ? 1 : position === 1 ? 0.94 : 0.88,
++              }}
++              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -18, scale: 0.94 }}
++              transition={{ duration: reduceMotion ? 0 : 0.65, ease: [0.22, 1, 0.36, 1] }}
++              aria-hidden={position > 0}
++            >
++              {position === 0 ? (
++                <Link className="hero-showcase-card-link" href={`/services/${item.slug}`} tabIndex={0}>
++                  <ShowcaseCardContent item={item} />
++                </Link>
++              ) : (
++                <div className="hero-showcase-card-link" aria-hidden="true">
++                  <ShowcaseCardContent item={item} />
++                </div>
++              )}
++            </motion.article>
++          ))}
++        </AnimatePresence>
++      </div>
++
++      <div className="hero-showcase-footer">
++        <span>Technology · Business · Digital</span>
++        <span className="showcase-auto-label"><i /> AUTOMATIC SHOWCASE</span>
++      </div>
++    </div>
++  );
++}
++
++function ShowcaseCardContent({ item }: { item: HeroShowcaseItem }) {
++  return (
++    <>
++      <div className="showcase-card-topline">
++        <span>{item.category.name}</span>
++        <span className="showcase-card-index">AV / SELECTED</span>
++      </div>
++      <div className="showcase-card-main">
++        <span className="showcase-card-icon">
++          <ServiceIcon name={item.icon} size={23} />
++        </span>
++        <span className="showcase-card-arrow"><ArrowUpRight size={17} /></span>
++      </div>
++      <h3>{item.name}</h3>
++      <p>{item.shortDescription}</p>
++      <span className="showcase-card-bottomline">
++        <span>EXPLORE CAPABILITY</span>
++        <span className="showcase-card-progress"><i /></span>
++      </span>
++    </>
++  );
++}
+diff --git a/src/components/site/infinite-marquee.tsx b/src/components/site/infinite-marquee.tsx
+new file mode 100644
+index 0000000..82a66b7
+--- /dev/null
++++ b/src/components/site/infinite-marquee.tsx
+@@ -0,0 +1,34 @@
++type MarqueeItem = {
++  label: string;
++  mark: string;
++};
++
++type InfiniteMarqueeProps = {
++  label: string;
++  items: MarqueeItem[];
++  reverse?: boolean;
++};
++
++export function InfiniteMarquee({ label, items, reverse = false }: InfiniteMarqueeProps) {
++  if (!items.length) return null;
++
++  return (
++    <div className={`arkyl-marquee-row${reverse ? " is-reverse" : ""}`}>
++      <div className="arkyl-marquee-label">{label}</div>
++      <div className="arkyl-marquee-viewport" role="region" aria-label={`${label}. Focus this strip to pause the movement.`} tabIndex={0}>
++        <div className="arkyl-marquee-track">
++          {[0, 1].map((copy) => (
++            <div className="arkyl-marquee-group" key={copy} aria-hidden={copy === 1}>
++              {items.map((item, index) => (
++                <span className="arkyl-marquee-item" key={`${copy}-${item.label}-${index}`}>
++                  <span className="arkyl-marquee-mark">{item.mark}</span>
++                  <span>{item.label}</span>
++                </span>
++              ))}
++            </div>
++          ))}
++        </div>
++      </div>
++    </div>
++  );
++}
+diff --git a/src/components/site/page-hero.tsx b/src/components/site/page-hero.tsx
+index 5a23523..795722a 100644
+--- a/src/components/site/page-hero.tsx
++++ b/src/components/site/page-hero.tsx
+@@ -1,5 +1,6 @@
+ import Link from "next/link";
+ import { ArrowUpRight } from "lucide-react";
++import { ScrollReveal } from "@/components/motion/scroll-reveal";
+ 
+ type PageHeroProps = {
+   eyebrow: string;
+@@ -15,7 +16,7 @@ type PageHeroProps = {
+ export function PageHero({ eyebrow, title, accent, description, primaryLabel, primaryHref, secondaryLabel, secondaryHref }: PageHeroProps) {
+   return (
+     <section className="page-hero section-container">
+-      <div className="page-hero-copy">
++      <ScrollReveal className="page-hero-copy">
+         <span className="section-kicker"><span className="eyebrow-line" />{eyebrow}</span>
+         <h1>{title} <span>{accent}</span></h1>
+         <p>{description}</p>
+@@ -25,14 +26,14 @@ export function PageHero({ eyebrow, title, accent, description, primaryLabel, pr
+             {secondaryLabel && secondaryHref ? <Link className="button button-outline" href={secondaryHref}>{secondaryLabel}<ArrowUpRight size={17} /></Link> : null}
+           </div>
+         ) : null}
+-      </div>
+-      <div className="page-hero-aside glass-card">
++      </ScrollReveal>
++      <ScrollReveal className="page-hero-aside glass-card" delay={0.12}>
+         <span className="page-hero-aside-mark">AV</span>
+         <span className="page-hero-aside-label">ARKYL VENTURES</span>
+         <strong>Where Possibilities Begin.</strong>
+         <span className="page-hero-aside-line" />
+         <small>Technology · Business · Possibility</small>
+-      </div>
++      </ScrollReveal>
+     </section>
+   );
+ }

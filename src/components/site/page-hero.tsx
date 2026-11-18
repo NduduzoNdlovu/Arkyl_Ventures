@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { ScrollReveal } from "@/components/motion/scroll-reveal";
 
 type PageHeroProps = {
   eyebrow: string;
@@ -15,7 +16,7 @@ type PageHeroProps = {
 export function PageHero({ eyebrow, title, accent, description, primaryLabel, primaryHref, secondaryLabel, secondaryHref }: PageHeroProps) {
   return (
     <section className="page-hero section-container">
-      <div className="page-hero-copy">
+      <ScrollReveal className="page-hero-copy">
         <span className="section-kicker"><span className="eyebrow-line" />{eyebrow}</span>
         <h1>{title} <span>{accent}</span></h1>
         <p>{description}</p>
@@ -25,14 +26,14 @@ export function PageHero({ eyebrow, title, accent, description, primaryLabel, pr
             {secondaryLabel && secondaryHref ? <Link className="button button-outline" href={secondaryHref}>{secondaryLabel}<ArrowUpRight size={17} /></Link> : null}
           </div>
         ) : null}
-      </div>
-      <div className="page-hero-aside glass-card">
+      </ScrollReveal>
+      <ScrollReveal className="page-hero-aside glass-card" delay={0.12}>
         <span className="page-hero-aside-mark">AV</span>
         <span className="page-hero-aside-label">ARKYL VENTURES</span>
         <strong>Where Possibilities Begin.</strong>
         <span className="page-hero-aside-line" />
         <small>Technology · Business · Possibility</small>
-      </div>
+      </ScrollReveal>
     </section>
   );
 }
